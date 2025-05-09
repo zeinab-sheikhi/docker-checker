@@ -42,7 +42,7 @@ build-backend = "hatchling.build"
 # docker-checker = ""
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/"] # TOOD: specify this later
+packages = ["src/app"]
 
 [tool.ruff]
 target-version = "py310"
