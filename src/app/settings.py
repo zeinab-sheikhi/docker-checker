@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     # Docker settings
     docker_storage_path: str = "storage/dockerfiles"
     docker_cleanup_images: bool = True  # Whether to cleanup images after use
+    docker_timeout: int = 30
 
     # Logging settings
     log_level: str = "INFO"
@@ -44,8 +45,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        env_prefix="APP_",  # Environment variables should be prefixed with APP_
         case_sensitive=False,
+        extra="allow",
     )
 
     def get_app_kwargs(self) -> dict[str, Any]:

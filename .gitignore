@@ -79,3 +79,4 @@ dmypy.json
 .vscode/
 .DS_Store
 instruction.txt
+ui_app.py

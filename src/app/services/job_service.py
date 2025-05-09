@@ -1,9 +1,12 @@
+import logging
 import uuid
 
 from fastapi import UploadFile
 
 from app.schemas.job import JobResponse, JobStatus
 from app.services.docker_service import DockerServiceInterface
+
+logging.basicConfig(level=logging.INFO)
 
 
 class JobService:
@@ -16,53 +19,67 @@ class JobService:
             docker_service: Service for Docker operations
         """
         self.docker_service = docker_service
-        self.jobs: dict[str, JobResponse] = {}
 
-    def process_dockerfile(self, file: UploadFile) -> str:
+    def process_dockerfile(self, file: UploadFile) -> JobResponse:
         """
-        Process uploaded Dockerfile through the workflow:
+        Process uploaded Dockerfile:
         1. Build image from uploaded file
-        2. Run container and get performance
-        Returns: job_id
+        2. Run container and get performance from output
+        Returns: JobResponse with status and performance
         """
-        # Create job
         job_id = str(uuid.uuid4())
-        self.jobs[job_id] = JobResponse(job_id=job_id, status=JobStatus.PENDING, performance=None)
-
         try:
+            logging.info(f"Starting build for job {job_id}")
             # Build image
-            self.jobs[job_id].status = JobStatus.BUILDING
-            build_result = self.docker_service.build_image(dockerfile=file.file, job_id=job_id)
+            build_result = self.docker_service.build_image(
+                dockerfile=file.file,
+                job_id=job_id,
+            )
 
             if not build_result.success or not build_result.image_id:
-                self.jobs[job_id].status = JobStatus.FAILED
-                self.jobs[job_id].message = build_result.error
-                return job_id
+                error_msg = build_result.error or "Unknown build error"
+                logging.error(f"Build failed: {error_msg}")
+                return JobResponse(
+                    status=JobStatus.FAILED,
+                    message=error_msg,
+                    job_id=job_id,
+                )
 
             # Run container
-            self.jobs[job_id].status = JobStatus.RUNNING
-            run_result = self.docker_service.run_container_with_volume(build_result.image_id)
+            logging.info(f"Starting container run for image {build_result.image_id}")
+            run_result = self.docker_service.run_container(build_result.image_id)
+            logging.info(f"Run result: {run_result}")
 
-            if run_result.success and run_result.performance is not None:
-                self.jobs[job_id].status = JobStatus.SUCCESS
-                self.jobs[job_id].performance = run_result.performance
-            else:
-                self.jobs[job_id].status = JobStatus.FAILED
-                self.jobs[job_id].message = run_result.error
+            if not run_result.success:
+                error_msg = run_result.error or "Unknown run error"
+                logging.error(f"Container run failed: {error_msg}")
+                return JobResponse(
+                    status=JobStatus.FAILED,
+                    message=error_msg,
+                    job_id=job_id,
+                )
 
-            # Cleanup
-            if build_result.image_id:
-                self.docker_service.cleanup_image(build_result.image_id)
+            return JobResponse(
+                status=JobStatus.SUCCESS,
+                performance=run_result.performance,
+                job_id=job_id,
+            )
 
         except Exception as e:
-            self.jobs[job_id].status = JobStatus.FAILED
-            self.jobs[job_id].message = str(e)
+            logging.exception(f"Unexpected error processing dockerfile for job {job_id}")
+            return JobResponse(
+                status=JobStatus.FAILED,
+                message=str(e),
+                job_id=job_id,
+            )
         finally:
-            # Clean up the BytesIO object
             file.file.close()
 
-        return job_id
-
-    async def get_job_status(self, job_id: str) -> JobResponse | None:
-        """Get current status and performance of a job"""
-        return self.jobs.get(job_id)
+    async def get_job_status(self, job_id: str) -> JobResponse:
+        """
+        This method doesn't make sense without a database
+        We should either remove it or implement proper database storage
+        """
+        raise NotImplementedError(
+            "Job status tracking requires a database. This method should not be used until database support is added."
+        )
