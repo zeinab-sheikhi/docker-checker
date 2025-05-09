@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel
@@ -38,6 +39,11 @@ class Settings(BaseSettings):
     docker_cleanup_images: bool = True  # Whether to cleanup images after use
     docker_timeout: int = 30
 
+    # Volume settings
+    volume_base_path: Path = Path("tmp/data")  # Base path for all job volumes
+    volume_mode: str = "rw"  # Read-write mode for volumes
+    volume_container_path: str = "/data"  # Mount point inside container
+
     # Logging settings
     log_level: str = "INFO"
     log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -52,6 +58,10 @@ class Settings(BaseSettings):
     def get_app_kwargs(self) -> dict[str, Any]:
         """Get FastAPI application arguments"""
         return self.app_config.model_dump()
+
+    def get_job_volume_path(self, job_id: str) -> Path:
+        """Get the volume path for a specific job"""
+        return self.volume_base_path / job_id
 
 
 # Create global settings instance

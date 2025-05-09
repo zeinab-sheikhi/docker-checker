@@ -1,4 +1,3 @@
-import json
 import logging
 from pathlib import Path
 from typing import BinaryIO, Protocol
@@ -23,18 +22,29 @@ class DockerServiceInterface(Protocol):
 
 
 class DockerService(DockerServiceInterface):
-    """Service for handling Docker operations"""
+    """
+    Service for handling Docker operations.
+    Manages container lifecycle, volume mounting, and data handling.
+    """
 
     def __init__(self):
-        """Initialize Docker client"""
+        """Initialize Docker client and setup workspace"""
         self.client = docker.from_env()
         self.timeout = settings.docker_timeout
-        # Create tmp directory if it doesn't exist
-        self.tmp_dir = Path("tmp")
-        self.tmp_dir.mkdir(exist_ok=True)
+        self._setup_workspace()
+
+    # Public methods (API)
+    # ------------------
 
     def build_image(self, dockerfile: BinaryIO, job_id: str) -> DockerBuildResponse:
-        """Build a Docker image from a dockerfile"""
+        """
+        Build a Docker image from a dockerfile
+        Args:
+            dockerfile: File object containing Dockerfile content
+            job_id: Unique identifier for this job
+        Returns:
+            DockerBuildResponse indicating build success/failure
+        """
         try:
             logging.info(f"Building image for job {job_id}")
             image, _ = self.client.images.build(
@@ -60,98 +70,98 @@ class DockerService(DockerServiceInterface):
         """
         container = None
         try:
-            # Create a unique directory for this job
-            job_data_dir = self.tmp_dir / "data" / job_id
-            job_data_dir.mkdir(parents=True, exist_ok=True)
-            logging.info(f"Created job directory: {job_data_dir}")
-
-            # Start container with mounted volume
+            # Prepare job directory and start container
+            job_data_dir = self._prepare_job_directory(job_id)
             container = self._start_container(image_id, job_data_dir)
 
-            # Wait for container to finish
-            exit_status, logs = self._wait_for_container(container)
-
-            # Log the container output
-            for line in logs.split("\n"):
-                logging.info(f"Container output: {line}")
-
-            if exit_status != 0:
-                return self._create_error_response(
-                    container, f"Container exited with status {exit_status}. Logs: {logs}"
-                )
-
-            # Check if files were created in the job's directory
-            if not job_data_dir.exists() or not any(job_data_dir.iterdir()):
-                return self._create_error_response(container, f"No data was written to the job directory {job_id}")
-
-            # Log the contents of the job's directory
-            logging.info(f"Files in job directory {job_id}:")
-            for file_path in job_data_dir.iterdir():
-                logging.info(f"  {file_path.name}")
-
-            return DockerRunResponse(
-                success=True,
-                container_id=container.id,
-                performance=None,  # We're not reading performance data at this stage
-            )
-
+            # Process container execution
+            return self._process_container_execution(container, job_id, job_data_dir)
         except Exception as e:
             return self._handle_container_error(container, e)
         finally:
             self._cleanup_container(container)
 
+    # Container lifecycle methods
+    # -------------------------
+
     def _start_container(self, image_id: str, job_data_dir: Path) -> Container:
-        """
-        Start a container with the given image ID and mount volume
-        Args:
-            image_id: ID of the Docker image to run
-            job_data_dir: Path to the job's data directory
-        Returns:
-            Container instance
-        """
+        """Start a container with volume mounted"""
         logging.info(f"Starting container with image {image_id}")
 
-        # Convert to absolute path for Docker
-        host_path = str(job_data_dir.absolute())
-        logging.info(f"Mounting host directory {host_path} to container /data")
+        volume_config = {
+            str(job_data_dir.absolute()): {"bind": settings.volume_container_path, "mode": settings.volume_mode}
+        }
 
-        return self.client.containers.run(
-            image=image_id, detach=True, volumes={host_path: {"bind": "/data", "mode": "rw"}}
+        logging.info(
+            f"Mounting host directory {job_data_dir} to container "
+            f"{settings.volume_container_path} in mode {settings.volume_mode}"
         )
 
+        return self.client.containers.run(image=image_id, detach=True, volumes=volume_config)
+
     def _wait_for_container(self, container: Container) -> tuple[int, str]:
-        """Wait for container to finish and get its logs"""
+        """Wait for container completion and get logs"""
         result = container.wait(timeout=self.timeout)
         logs = container.logs().decode("utf-8").strip()
-
-        # Log container output
-        for line in logs.split("\n"):
-            logging.info(f"  {line}")
-
+        self._log_container_output(logs)
         return result["StatusCode"], logs
 
-    def _read_performance_data(self, container: Container) -> float | None:
-        """Read performance data from /data/perf.json in the container"""
-        try:
-            # Execute cat command in the running container
-            exit_code, output = container.exec_run(cmd=["cat", "/data/perf.json"], workdir="/data")
+    def _cleanup_container(self, container: Container | None) -> None:
+        """Clean up container resources"""
+        if container:
+            try:
+                container.remove(force=True)
+                logging.info("Container removed successfully")
+            except Exception as e:
+                logging.error(f"Error removing container: {str(e)}")
 
-            if exit_code != 0:
-                logging.error(f"Failed to read performance file: {output.decode('utf-8')}")
-                return None
+    # Data handling methods
+    # -------------------
 
-            # Parse the performance data
-            perf_data = json.loads(output.decode("utf-8"))
-            performance = float(perf_data["perf"])
-            logging.info(f"Successfully read performance data: {performance}")
-            return performance
+    def _setup_workspace(self) -> None:
+        """Setup workspace directories"""
+        settings.volume_base_path.mkdir(parents=True, exist_ok=True)
+        logging.info(f"Initialized volume base path: {settings.volume_base_path}")
 
-        except Exception as e:
-            logging.error(f"Failed to read performance data: {str(e)}")
-            return None
+    def _prepare_job_directory(self, job_id: str) -> Path:
+        """Create and prepare job-specific directory"""
+        job_data_dir = settings.get_job_volume_path(job_id)
+        job_data_dir.mkdir(parents=True, exist_ok=True)
+        logging.info(f"Created job directory: {job_data_dir}")
+        return job_data_dir
+
+    def _verify_job_data(self, job_data_dir: Path, job_id: str) -> bool:
+        """Verify data was written to job directory"""
+        if not job_data_dir.exists() or not any(job_data_dir.iterdir()):
+            logging.error(f"No data written to job directory {job_id}")
+            return False
+
+        logging.info(f"Files in job directory {job_id}:")
+        for file_path in job_data_dir.iterdir():
+            logging.info(f"  {file_path.name}")
+        return True
+
+    # Helper methods
+    # -------------
+
+    def _process_container_execution(self, container: Container, job_id: str, job_data_dir: Path) -> DockerRunResponse:
+        """Process container execution and verify results"""
+        exit_status, logs = self._wait_for_container(container)
+
+        if exit_status != 0:
+            return self._create_error_response(container, f"Container exited with status {exit_status}. Logs: {logs}")
+
+        if not self._verify_job_data(job_data_dir, job_id):
+            return self._create_error_response(container, f"No data was written to the job directory {job_id}")
+
+        return DockerRunResponse(
+            success=True,
+            container_id=container.id,
+            performance=None,  # We're not reading performance data at this stage
+        )
 
     def _create_error_response(self, container: Container | None, error: str) -> DockerRunResponse:
-        """Create an error response"""
+        """Create standardized error response"""
         logging.error(error)
         return DockerRunResponse(success=False, container_id=container.id if container else None, error=error)
 
@@ -164,10 +174,7 @@ class DockerService(DockerServiceInterface):
             logging.error(f"Container logs before error: {logs}")
         return self._create_error_response(container, error_msg)
 
-    def _cleanup_container(self, container: Container | None) -> None:
-        """Clean up container resources"""
-        if container:
-            try:
-                container.remove(force=True)
-            except Exception as e:
-                logging.error(f"Error removing container: {str(e)}")
+    def _log_container_output(self, logs: str) -> None:
+        """Log container output in a consistent format"""
+        for line in logs.split("\n"):
+            logging.info(f"Container output: {line}")
