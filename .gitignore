@@ -80,3 +80,4 @@ dmypy.json
 .DS_Store
 instruction.txt
 ui_app.py
+tmp/

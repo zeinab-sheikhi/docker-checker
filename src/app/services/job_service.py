@@ -47,7 +47,7 @@ class JobService:
 
             # Run container
             logging.info(f"Starting container run for image {build_result.image_id}")
-            run_result = self.docker_service.run_container(build_result.image_id)
+            run_result = self.docker_service.run_container(build_result.image_id, job_id)
             logging.info(f"Run result: {run_result}")
 
             if not run_result.success:

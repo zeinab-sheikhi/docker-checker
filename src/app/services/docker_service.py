@@ -1,6 +1,6 @@
 import json
 import logging
-import time
+from pathlib import Path
 from typing import BinaryIO, Protocol
 
 import docker
@@ -17,7 +17,7 @@ class DockerServiceInterface(Protocol):
         """Build a Docker image"""
         ...
 
-    def run_container(self, image_id: str) -> DockerRunResponse:
+    def run_container(self, image_id: str, job_id: str) -> DockerRunResponse:
         """Run a container and get its output"""
         ...
 
@@ -29,6 +29,9 @@ class DockerService(DockerServiceInterface):
         """Initialize Docker client"""
         self.client = docker.from_env()
         self.timeout = settings.docker_timeout
+        # Create tmp directory if it doesn't exist
+        self.tmp_dir = Path("tmp")
+        self.tmp_dir.mkdir(exist_ok=True)
 
     def build_image(self, dockerfile: BinaryIO, job_id: str) -> DockerBuildResponse:
         """Build a Docker image from a dockerfile"""
@@ -46,40 +49,74 @@ class DockerService(DockerServiceInterface):
             logging.error(f"Failed to build image: {str(e)}")
             return DockerBuildResponse(success=False, error=str(e))
 
-    def run_container(self, image_id: str) -> DockerRunResponse:
-        """Run a container and process its output"""
+    def run_container(self, image_id: str, job_id: str) -> DockerRunResponse:
+        """
+        Run a container with a mounted volume and process its output
+        Args:
+            image_id: ID of the Docker image to run
+            job_id: Unique identifier for this job
+        Returns:
+            DockerRunResponse with status and container info
+        """
         container = None
         try:
-            container = self._start_container(image_id)
+            # Create a unique directory for this job
+            job_data_dir = self.tmp_dir / "data" / job_id
+            job_data_dir.mkdir(parents=True, exist_ok=True)
+            logging.info(f"Created job directory: {job_data_dir}")
 
-            # Give the container a moment to write the file
-            time.sleep(1)  # Wait 1 second
+            # Start container with mounted volume
+            container = self._start_container(image_id, job_data_dir)
 
-            # Try to read performance data while container is running
-            performance = self._read_performance_data(container)
-            if performance is not None:
-                return DockerRunResponse(success=True, container_id=container.id, performance=performance)
-
-            # If we couldn't read the data, wait for container to finish and check logs
+            # Wait for container to finish
             exit_status, logs = self._wait_for_container(container)
+
+            # Log the container output
+            for line in logs.split("\n"):
+                logging.info(f"Container output: {line}")
+
             if exit_status != 0:
                 return self._create_error_response(
                     container, f"Container exited with status {exit_status}. Logs: {logs}"
                 )
 
-            return self._create_error_response(container, "Failed to read performance data")
+            # Check if files were created in the job's directory
+            if not job_data_dir.exists() or not any(job_data_dir.iterdir()):
+                return self._create_error_response(container, f"No data was written to the job directory {job_id}")
+
+            # Log the contents of the job's directory
+            logging.info(f"Files in job directory {job_id}:")
+            for file_path in job_data_dir.iterdir():
+                logging.info(f"  {file_path.name}")
+
+            return DockerRunResponse(
+                success=True,
+                container_id=container.id,
+                performance=None,  # We're not reading performance data at this stage
+            )
 
         except Exception as e:
             return self._handle_container_error(container, e)
         finally:
             self._cleanup_container(container)
 
-    def _start_container(self, image_id: str) -> Container:
-        """Start a container with the given image ID"""
+    def _start_container(self, image_id: str, job_data_dir: Path) -> Container:
+        """
+        Start a container with the given image ID and mount volume
+        Args:
+            image_id: ID of the Docker image to run
+            job_data_dir: Path to the job's data directory
+        Returns:
+            Container instance
+        """
         logging.info(f"Starting container with image {image_id}")
+
+        # Convert to absolute path for Docker
+        host_path = str(job_data_dir.absolute())
+        logging.info(f"Mounting host directory {host_path} to container /data")
+
         return self.client.containers.run(
-            image=image_id,
-            detach=True,
+            image=image_id, detach=True, volumes={host_path: {"bind": "/data", "mode": "rw"}}
         )
 
     def _wait_for_container(self, container: Container) -> tuple[int, str]:
