@@ -21,7 +21,7 @@ job_service_dependency = Depends(get_job_service)
 @router.post("/", response_model=JobResponse)
 async def create_job(
     file: UploadFile,
-    job_service: JobService = job_service_dependency,  # Use the module-level dependency
+    job_service: JobService = job_service_dependency,
 ) -> Any:
     """
     Submit a dockerfile and create a new job.

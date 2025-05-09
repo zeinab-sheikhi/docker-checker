@@ -42,7 +42,7 @@ test:
 	uv run pytest tests/
 
 test-coverage:
-	uv run pytest --cov=mcp_alphafold --cov-report=term-missing
+	uv run pytest --cov=app --cov-report=term-missing
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +

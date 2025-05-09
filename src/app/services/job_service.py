@@ -3,7 +3,7 @@ import uuid
 from fastapi import UploadFile
 
 from app.schemas.job import JobResponse, JobStatus
-from app.services.interfaces import DockerServiceInterface
+from app.services.docker_service import DockerServiceInterface
 
 
 class JobService:

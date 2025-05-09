@@ -1,13 +1,28 @@
 import json
-from typing import BinaryIO
+from typing import BinaryIO, Protocol
 
 import docker
 from docker.models.containers import Container
 from docker.models.volumes import Volume
 
 from app.schemas.docker import DockerBuildResponse, DockerRunResponse
-from app.services.interfaces import DockerServiceInterface
 from app.settings import settings
+
+
+class DockerServiceInterface(Protocol):
+    """Interface for Docker operations"""
+
+    def build_image(self, dockerfile: BinaryIO, job_id: str) -> DockerBuildResponse:
+        """Build a Docker image"""
+        ...
+
+    def run_container_with_volume(self, image_id: str) -> DockerRunResponse:
+        """Run a container with volume"""
+        ...
+
+    def cleanup_image(self, image_id: str) -> None:
+        """Clean up Docker image"""
+        ...
 
 
 class DockerService(DockerServiceInterface):
