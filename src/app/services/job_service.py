@@ -3,9 +3,9 @@ import uuid
 
 from fastapi import UploadFile
 
-from app.core.settings import settings
 from app.schemas.job import JobResponse, JobStatus
 from app.services.interfaces import DockerServiceInterface
+from app.settings import settings
 
 
 class JobService:
@@ -41,7 +41,7 @@ class JobService:
             # Build image
             self.jobs[job_id].status = JobStatus.BUILDING
             build_result = self.docker_service.build_image(dockerfile_path)
-            if not build_result.success:
+            if not build_result.success or not build_result.image_id:
                 self.jobs[job_id].status = JobStatus.FAILED
                 self.jobs[job_id].message = build_result.error
                 return job_id

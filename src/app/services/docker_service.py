@@ -5,9 +5,9 @@ from docker.errors import APIError, BuildError
 from docker.models.containers import Container
 from docker.models.volumes import Volume
 
-from app.core.settings import settings
 from app.schemas.docker import DockerBuildResponse, DockerRunResponse
 from app.services.interfaces import DockerServiceInterface
+from app.settings import settings
 
 
 class DockerService(DockerServiceInterface):

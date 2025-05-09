@@ -2,12 +2,12 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, RedirectResponse
 
-from app.core.settings import settings
 from app.routers.jobs import router as jobs_router
+from app.settings import settings
 
 app = FastAPI(**settings.get_app_kwargs())
 
-app.include_router(jobs_router)
+app.include_router(jobs_router, prefix=settings.app_config.api_prefix)
 
 
 @app.get("/")

@@ -18,7 +18,7 @@ class AppConfig(BaseModel):
     docs_url: str = "/docs"
     redoc_url: str = "/redoc"
     openapi_url: str = "/openapi.json"
-    api_prefix: str = ""
+    api_prefix: str = "/api/v1"
 
 
 class Settings(BaseSettings):
@@ -34,7 +34,6 @@ class Settings(BaseSettings):
     app_config: AppConfig = AppConfig()
 
     # Docker settings
-    docker_registry: str | None = None  # Optional private registry
     docker_storage_path: str = "storage/dockerfiles"
     docker_cleanup_images: bool = True  # Whether to cleanup images after use
 
