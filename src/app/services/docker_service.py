@@ -1,7 +1,7 @@
 import json
+from typing import BinaryIO
 
 import docker
-from docker.errors import APIError, BuildError
 from docker.models.containers import Container
 from docker.models.volumes import Volume
 
@@ -19,23 +19,19 @@ class DockerService(DockerServiceInterface):
         self.timeout = settings.docker_timeout
         self.cleanup_images = settings.docker_cleanup_images
 
-    def build_image(self, dockerfile_path: str) -> DockerBuildResponse:
-        """
-        Build a Docker image from a Dockerfile
-        Returns: Build response with status and image ID
-        """
+    def build_image(self, dockerfile: BinaryIO, job_id: str) -> DockerBuildResponse:
         try:
             image, _ = self.client.images.build(
-                path=dockerfile_path,
-                rm=True,  # Remove intermediate containers
-                forcerm=True,  # Always remove intermediate containers
-                timeout=self.timeout,
+                fileobj=dockerfile,
+                tag=f"docker-check-{job_id}",
+                rm=True,
+                forcerm=True,
+                nocache=True,
+                labels={"job_id": job_id, "service": "docker-check"},
             )
             return DockerBuildResponse(success=True, image_id=image.id)
-        except (BuildError, APIError) as e:
-            return DockerBuildResponse(success=False, error=str(e))
         except Exception as e:
-            return DockerBuildResponse(success=False, error=f"Unexpected error during build: {str(e)}")
+            return DockerBuildResponse(success=False, error=str(e))
 
     def run_container_with_volume(self, image_id: str) -> DockerRunResponse:
         """

@@ -1,11 +1,9 @@
-import os
 import uuid
 
 from fastapi import UploadFile
 
 from app.schemas.job import JobResponse, JobStatus
 from app.services.interfaces import DockerServiceInterface
-from app.settings import settings
 
 
 class JobService:
@@ -19,15 +17,12 @@ class JobService:
         """
         self.docker_service = docker_service
         self.jobs: dict[str, JobResponse] = {}
-        self.storage_path = os.path.join(os.getcwd(), settings.storage_path)
-        os.makedirs(self.storage_path, exist_ok=True)
 
-    async def process_dockerfile(self, file: UploadFile) -> str:
+    def process_dockerfile(self, file: UploadFile) -> str:
         """
         Process uploaded Dockerfile through the workflow:
-        1. Save Dockerfile
-        2. Build image
-        3. Run container and get performance
+        1. Build image from uploaded file
+        2. Run container and get performance
         Returns: job_id
         """
         # Create job
@@ -35,12 +30,10 @@ class JobService:
         self.jobs[job_id] = JobResponse(job_id=job_id, status=JobStatus.PENDING, performance=None)
 
         try:
-            # Save Dockerfile
-            dockerfile_path = await self._save_dockerfile(file, job_id)
-
             # Build image
             self.jobs[job_id].status = JobStatus.BUILDING
-            build_result = self.docker_service.build_image(dockerfile_path)
+            build_result = self.docker_service.build_image(dockerfile=file.file, job_id=job_id)
+
             if not build_result.success or not build_result.image_id:
                 self.jobs[job_id].status = JobStatus.FAILED
                 self.jobs[job_id].message = build_result.error
@@ -64,21 +57,12 @@ class JobService:
         except Exception as e:
             self.jobs[job_id].status = JobStatus.FAILED
             self.jobs[job_id].message = str(e)
+        finally:
+            # Clean up the BytesIO object
+            file.file.close()
 
         return job_id
 
     async def get_job_status(self, job_id: str) -> JobResponse | None:
         """Get current status and performance of a job"""
         return self.jobs.get(job_id)
-
-    async def _save_dockerfile(self, file: UploadFile, job_id: str) -> str:
-        """Save Dockerfile to disk"""
-        job_dir = os.path.join(self.storage_path, job_id)
-        os.makedirs(job_dir, exist_ok=True)
-
-        file_path = os.path.join(job_dir, "Dockerfile")
-        content = await file.read()
-        with open(file_path, "wb") as f:
-            f.write(content)
-
-        return job_dir  # Return directory containing Dockerfile

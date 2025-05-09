@@ -28,7 +28,7 @@ async def create_job(
     Returns a job ID and initial status.
     """
     try:
-        job_id = await job_service.process_dockerfile(file)
+        job_id = job_service.process_dockerfile(file)
         return await job_service.get_job_status(job_id)
     except Exception as e:
         raise HTTPException(
