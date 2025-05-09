@@ -1,0 +1,135 @@
+[project]
+name = "docker-check"
+version = "0.1.0"
+description = "Docker Check Server"
+authors = [
+    { name="Zeinab Sheikhi", email="zeinab.sheikhitarghi@owkin.com" },
+]
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Intended Audience :: Developers",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "fastapi>=0.115.12",
+    "pydantic>=2.11.4",
+    "pydantic-settings>=2.9.1",
+    "docker>=7.1.0",
+    "uvicorn>=0.34.2",
+    "python-multipart>=0.0.20",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "isort>=6.0.1",
+    "mypy>=1.9.0",
+    "pre-commit>=4.1.0",
+    "pytest>=8.3.3",
+    "ruff>=0.8.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# [project.scripts]
+# "k.api:server" sth like this must be added
+# docker-checker = ""
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/"] # TOOD: specify this later
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+fix = true
+unsafe-fixes = true
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+[tool.ruff.lint]
+select = [
+    "F",  # flake8 rules
+    "E",  # pydocstyle error rules
+    "W",  # pydocstyle warning rules
+    "B",  # flake8-bugbear rules
+    "I",  # isort rules
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "ARG001", # unused arguments in functions
+]
+ignore = [
+    "E501",  # line-too-long
+    "F841",  # Unused variable
+]
+
+[tool.ruff.format]
+preview = true
+indent-style = "space"
+quote-style = "double"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+"__init__.py" = ["I001"]
+
+
+[tool.mypy]
+files = ["src"]
+ignore_missing_imports = true
+disallow_untyped_defs = false
+disallow_any_unimported = false
+no_implicit_optional = true
+check_untyped_defs = false
+warn_return_any = false
+warn_unused_ignores = true
+show_error_codes = true
+disable_error_code = [
+    "union-attr",
+    "prop-decorator",
+]
+
+[tool.pytest.ini_options]
+addopts = "--cov=mcp_alphafold --cov-report=term-missing"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+
+[tool.coverage.run]
+source = ["mcp_alphafold"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError",
+]
