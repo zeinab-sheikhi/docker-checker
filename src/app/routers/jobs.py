@@ -1,9 +1,10 @@
 from typing import Any
-from fastapi import APIRouter, UploadFile, HTTPException, Depends
-from app.schemas.job import JobResponse
-from app.services.job_service import JobService
-from app.services.docker_service import DockerService
 
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
+
+from app.schemas.job import JobResponse
+from app.services.docker_service import DockerService
+from app.services.job_service import JobService
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -14,10 +15,13 @@ def get_job_service() -> JobService:
     return JobService(docker_service)
 
 
+job_service_dependency = Depends(get_job_service)
+
+
 @router.post("/", response_model=JobResponse)
 async def create_job(
     file: UploadFile,
-    job_service: JobService = Depends(get_job_service)
+    job_service: JobService = job_service_dependency,  # Use the module-level dependency
 ) -> Any:
     """
     Submit a dockerfile and create a new job.
@@ -29,14 +33,14 @@ async def create_job(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Error processing dockerfile: {str(e)}"
-        )
+            detail=f"Error processing dockerfile: {str(e)}",
+        ) from e
 
 
 @router.get("/{job_id}", response_model=JobResponse)
 async def get_job_status(
     job_id: str,
-    job_service: JobService = Depends(get_job_service)
+    job_service: JobService = job_service_dependency,  # Use the same dependency
 ) -> Any:
     """
     Get job status and performance by ID.
@@ -52,6 +56,5 @@ async def get_job_status(
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Error retrieving job status: {str(e)}"
-        )
-
+            detail=f"Error retrieving job status: {str(e)}",
+        ) from e

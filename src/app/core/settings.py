@@ -1,10 +1,12 @@
-from typing import Any, Dict, Optional
+from typing import Any
+
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class AppConfig(BaseModel):
     """Application configuration"""
+
     title: str = "Docker Performance Service"
     description: str = """
     A service that processes Dockerfiles, builds images, and measures container performance.
@@ -21,6 +23,7 @@ class AppConfig(BaseModel):
 
 class Settings(BaseSettings):
     """Application settings"""
+
     # Server settings
     server_host: str = "127.0.0.1"
     server_port: int = 8000
@@ -31,7 +34,7 @@ class Settings(BaseSettings):
     app_config: AppConfig = AppConfig()
 
     # Docker settings
-    docker_registry: Optional[str] = None  # Optional private registry
+    docker_registry: str | None = None  # Optional private registry
     docker_storage_path: str = "storage/dockerfiles"
     docker_cleanup_images: bool = True  # Whether to cleanup images after use
 
@@ -46,10 +49,10 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    def get_app_kwargs(self) -> Dict[str, Any]:
+    def get_app_kwargs(self) -> dict[str, Any]:
         """Get FastAPI application arguments"""
         return self.app_config.model_dump()
 
 
 # Create global settings instance
-settings = Settings() 
+settings = Settings()

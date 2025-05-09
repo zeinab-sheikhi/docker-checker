@@ -1,12 +1,14 @@
 import uvicorn
 from fastapi import FastAPI
-from fastapi.responses import RedirectResponse, JSONResponse
-from app.routers.jobs import router as jobs_router
+from fastapi.responses import JSONResponse, RedirectResponse
+
 from app.core.settings import settings
+from app.routers.jobs import router as jobs_router
 
 app = FastAPI(**settings.get_app_kwargs())
 
 app.include_router(jobs_router)
+
 
 @app.get("/")
 async def root():
@@ -21,9 +23,4 @@ def health() -> JSONResponse:
 
 
 if __name__ == "__main__":
-    uvicorn.run(
-        app,
-        host=settings.server_host,
-        port=settings.server_port,
-        workers=settings.server_workers
-    )
+    uvicorn.run(app, host=settings.server_host, port=settings.server_port, workers=settings.server_workers)

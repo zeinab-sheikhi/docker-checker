@@ -1,10 +1,11 @@
 from typing import Protocol
+
 from app.schemas.docker import DockerBuildResponse, DockerRunResponse
 
 
 class DockerServiceInterface(Protocol):
     """Interface for Docker operations"""
-    
+
     def build_image(self, dockerfile_path: str) -> DockerBuildResponse:
         """Build a Docker image"""
         ...
@@ -15,4 +16,4 @@ class DockerServiceInterface(Protocol):
 
     def cleanup_image(self, image_id: str) -> None:
         """Clean up Docker image"""
-        ... 
+        ...

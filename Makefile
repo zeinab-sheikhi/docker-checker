@@ -33,7 +33,7 @@ update-pre-commit:
 
 lint:
 	uv run ruff check --fix src tests
-	uv run ruff format --check src tests
+	uv run ruff format src tests
 
 type:
 	uv run mypy src --install-types --non-interactive --show-traceback
