@@ -1,3 +1,4 @@
+from collections import Counter
 from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator
@@ -13,6 +14,16 @@ class JobStatus(str, Enum):
     SUCCESS = "success"
 
 
+class VulnerabilitySeverityCount(BaseModel):
+    severity: str
+    count: int
+
+    @classmethod
+    def summarize(cls, vulnerabilities: list) -> list["VulnerabilitySeverityCount"]:
+        severity_counter = Counter(v.severity for v in vulnerabilities) if vulnerabilities else {}
+        return [cls(severity=sev, count=count) for sev, count in severity_counter.items()]
+
+
 class JobResponse(BaseModel):
     """Response model for job status"""
 
@@ -20,6 +31,9 @@ class JobResponse(BaseModel):
     status: JobStatus = Field(..., description="Current status of the job")
     performance: float | None = Field(None, description="Performance metric if job succeeded")
     scan_report: str | None = Field(None, description="Scan report")
+    vulnerabilitys: list[VulnerabilitySeverityCount] | None = Field(
+        None, description="List of vulnerability counts by severity"
+    )
 
     @field_validator("performance", mode="after")
     @classmethod
@@ -35,6 +49,11 @@ class JobResponse(BaseModel):
                 "status": "success",
                 "performance": 0.99,
                 "scan_report": "",
+                "vulnerability_summary": [
+                    {"severity": "HIGH", "count": 5},
+                    {"severity": "MEDIUM", "count": 10},
+                    {"severity": "LOW", "count": 1},
+                ],
             }
         }
 

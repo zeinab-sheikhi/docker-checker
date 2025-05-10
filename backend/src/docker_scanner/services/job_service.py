@@ -3,7 +3,11 @@ import uuid
 
 from fastapi import UploadFile
 
-from docker_scanner.schemas.job import JobResponse, JobStatus
+from docker_scanner.schemas.job import (
+    JobResponse,
+    JobStatus,
+    VulnerabilitySeverityCount,
+)
 from docker_scanner.schemas.trivy import format_vulnerabilities
 from docker_scanner.services.docker_service import DockerServiceInterface
 
@@ -41,6 +45,7 @@ class JobService:
             logging.info(f"Scanning image {image.image_id} for vulnerabilities")
             if image.image_id is not None:
                 scan_result = self.docker_service.scan_image(image.image_id)
+                vulnerabilities = VulnerabilitySeverityCount.summarize(scan_result.vulnerabilities)
                 scan_report_str = format_vulnerabilities(scan_result.vulnerabilities)
 
                 # Only run container if scan passes (is_safe)
@@ -51,6 +56,7 @@ class JobService:
                         performance=None,
                         job_id=job_id,
                         scan_report=scan_report_str,
+                        vulnerabilities=vulnerabilities,
                     )
 
                 # Run container
@@ -62,6 +68,7 @@ class JobService:
                     performance=run_result.performance,
                     job_id=job_id,
                     scan_report=scan_report_str,
+                    vulnerabilities=vulnerabilities,
                 )
 
             return JobResponse(
@@ -69,6 +76,7 @@ class JobService:
                 performance=None,
                 job_id=job_id,
                 scan_report=None,
+                vulnerabilities=None,
             )
 
         finally:
