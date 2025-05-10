@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CVSSModel(BaseModel):
@@ -53,12 +53,15 @@ class TrivyReportModel(BaseModel):
 
 
 class VulnerabilitySummary(BaseModel):
-    package: str
-    vulnerability_id: str
-    severity: str
-    title: str | None
-    description: str | None
-    fixed_version: str | None
+    package: str = Field(..., alias="PkgName")
+    vulnerability_id: str = Field(..., alias="VulnerabilityID")
+    severity: str = Field(..., alias="Severity")
+    title: str | None = Field(None, alias="Title")
+    description: str | None = Field(None, alias="Description")
+    fixed_version: str | None = Field(None, alias="FixedVersion")
+
+    class Config:
+        populate_by_name = True
 
 
 class ScanResult(BaseModel):

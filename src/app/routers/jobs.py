@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 
 from app.schemas.job import JobResponse
 from app.services.docker_service import DockerService
@@ -27,8 +27,7 @@ async def create_job(
     """
     try:
         return job_service.process_dockerfile(file)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error processing dockerfile: {str(e)}",
-        ) from e
+    except ValueError as err:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)) from err
+    except Exception as err:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)) from err

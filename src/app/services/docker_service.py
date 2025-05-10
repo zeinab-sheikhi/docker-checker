@@ -68,8 +68,13 @@ class DockerService(DockerServiceInterface):
             logging.info(f"Successfully built image with ID: {image.id}\n")
             return DockerBuildImageResponse(image_id=image.id, tags=image.tags)
         except (docker.errors.BuildError, docker.errors.APIError) as e:
-            raise RuntimeError(f"Docker Error : {str(e)}") from e
+            logging.error(f"Docker build failed: {str(e)}")
+            raise ValueError(f"Docker build failed: {str(e)}") from e
+        except TypeError as e:
+            logging.error(f"Docker File Type Error: {str(e)}")
+            raise ValueError(f"Docker File Type Error: {str(e)}") from e
         except Exception as e:
+            logging.error(f"Docker build failed: {str(e)}")
             raise RuntimeError(str(e)) from e
 
     def scan_image(self, image_id: str) -> ScanResult:
@@ -93,10 +98,13 @@ class DockerService(DockerServiceInterface):
 
         except subprocess.CalledProcessError as e:
             logging.error(f"Trivy scan failed: {e.stderr}")
-            raise
-        except json.JSONDecodeError:
+            raise ValueError(f"Trivy scan failed: {e.stderr}") from e
+        except json.JSONDecodeError as e:
             logging.error("Failed to parse Trivy output as JSON.")
-            raise
+            raise ValueError("Failed to parse Trivy output as JSON.") from e
+        except Exception as e:
+            logging.error(f"Unexpected error during Trivy scan: {str(e)}")
+            raise RuntimeError(f"Unexpected error during Trivy scan: {str(e)}") from e
 
     def run_container(self, image_id: str, job_id: str) -> DockerRunContainerResponse:
         """

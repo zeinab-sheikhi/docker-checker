@@ -31,57 +31,40 @@ class JobService:
         """
         job_id = str(uuid.uuid4())
         try:
-            logging.info(f"Starting build for job {job_id}")
             # Build image
-            build_result = self.docker_service.build_image(
+            image = self.docker_service.build_image(
                 dockerfile=file.file,
                 job_id=job_id,
             )
 
-            if not build_result.success or not build_result.image_id:
-                error_msg = build_result.error or "Unknown build error"
-                logging.error(f"Build failed: {error_msg}")
-                return JobResponse(
-                    status=JobStatus.FAILED,
-                    message=error_msg,
-                    job_id=job_id,
-                )
-
             # Scan image with Trivy
-            logging.info(f"Scanning image {build_result.image_id} for vulnerabilities")
-            scan_result = self.docker_service.scan_image(build_result.image_id)
-            scan_report_str = format_vulnerabilities(scan_result.vulnerabilities)
+            logging.info(f"Scanning image {image.image_id} for vulnerabilities")
+            if image.image_id is not None:
+                scan_result = self.docker_service.scan_image(image.image_id)
+                scan_report_str = format_vulnerabilities(scan_result.vulnerabilities)
 
-            # Run container
-            logging.info(f"Starting container run for image {build_result.image_id}")
-            run_result = self.docker_service.run_container(build_result.image_id, job_id)
-            logging.info(f"Run result: {run_result}")
+            # # Run container
+            # logging.info(f"Starting container run for image {build_result.image_id}")
+            # run_result = self.docker_service.run_container(build_result.image_id, job_id)
+            # logging.info(f"Run result: {run_result}")
 
-            if not run_result.success:
-                error_msg = run_result.error or "Unknown run error"
-                logging.error(f"Container run failed: {error_msg}")
-                return JobResponse(
-                    status=JobStatus.FAILED,
-                    message=error_msg,
-                    job_id=job_id,
-                    scan_report=scan_report_str,
-                )
+            # if not run_result.success:
+            #     error_msg = run_result.error or "Unknown run error"
+            #     logging.error(f"Container run failed: {error_msg}")
+            #     return JobResponse(
+            #         status=JobStatus.FAILED,
+            #         message=error_msg,
+            #         job_id=job_id,
+            #         scan_report=scan_report_str,
+            #     )
 
             return JobResponse(
                 status=JobStatus.SUCCESS,
-                performance=run_result.performance,
+                performance=None,
                 job_id=job_id,
                 scan_report=scan_report_str,
             )
 
-        except Exception as e:
-            logging.exception(f"Unexpected error processing dockerfile for job {job_id}")
-            return JobResponse(
-                status=JobStatus.FAILED,
-                message=str(e),
-                job_id=job_id,
-                scan_report=scan_report_str,
-            )
         finally:
             file.file.close()
 
