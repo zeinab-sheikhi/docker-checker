@@ -31,3 +31,7 @@ class JobResponse(BaseModel):
                 "message": None,
             }
         }
+
+
+class ErrorResponse(BaseModel):
+    error: str

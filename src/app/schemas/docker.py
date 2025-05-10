@@ -1,18 +1,22 @@
 from pydantic import BaseModel, Field
 
 
-class DockerBuildResponse(BaseModel):
+class DockerBuildImageResponse(BaseModel):
     """Response model for Docker build operation"""
 
-    success: bool = Field(..., description="Whether the build succeeded")
-    image_id: str | None = Field(None, description="ID of the built image if successful")
-    error: str | None = Field(None, description="Error message if build failed")
+    image_id: str | None = Field(None, description="ID of the built image")
+    tags: list[str] = Field(..., description="Tags associated with the built image")
 
     class Config:
-        json_schema_extra = {"example": {"success": True, "image_id": "sha256:1234567890abcdef", "error": None}}
+        json_schema_extra = {
+            "example": {
+                "image_id": "sha256:1234567890abcdef",
+                "tags": ["latest"],
+            }
+        }
 
 
-class DockerRunResponse(BaseModel):
+class DockerRunContainerResponse(BaseModel):
     """Response model for Docker run operation"""
 
     success: bool = Field(..., description="Whether the container ran successfully")

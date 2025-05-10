@@ -7,7 +7,7 @@ from typing import BinaryIO, Protocol
 import docker
 from docker.models.containers import Container
 
-from app.schemas.docker import DockerBuildResponse, DockerRunResponse
+from app.schemas.docker import DockerBuildImageResponse, DockerRunContainerResponse
 from app.schemas.trivy import ScanResult, TrivyReportModel, VulnerabilitySummary
 from app.settings import settings
 
@@ -15,7 +15,7 @@ from app.settings import settings
 class DockerServiceInterface(Protocol):
     """Interface for Docker operations"""
 
-    def build_image(self, dockerfile: BinaryIO, job_id: str) -> DockerBuildResponse:
+    def build_image(self, dockerfile: BinaryIO, job_id: str) -> DockerBuildImageResponse:
         """Build a Docker image from a Dockerfile."""
         ...
 
@@ -23,7 +23,7 @@ class DockerServiceInterface(Protocol):
         """Scan a Docker image for vulnerabilities using Trivy."""
         ...
 
-    def run_container(self, image_id: str, job_id: str) -> DockerRunResponse:
+    def run_container(self, image_id: str, job_id: str) -> DockerRunContainerResponse:
         """Run a container from an image and process its output."""
         ...
 
@@ -38,12 +38,12 @@ class DockerService(DockerServiceInterface):
         """Initialize Docker client and setup workspace"""
         self.client = docker.from_env()
         self.timeout = settings.docker_timeout
-        self._setup_workspace()
+        self._setup_volume_directory()
 
     # Public methods (API)
     # ------------------
 
-    def build_image(self, dockerfile: BinaryIO, job_id: str) -> DockerBuildResponse:
+    def build_image(self, dockerfile: BinaryIO, job_id: str) -> DockerBuildImageResponse:
         """
         Build a Docker image from a Dockerfile.
 
@@ -52,7 +52,10 @@ class DockerService(DockerServiceInterface):
             job_id (str): A unique identifier for the job, used to tag the built image.
 
         Returns:
-            DockerBuildResponse: An object indicating whether the build was successful, the image ID if successful, or an error message if failed.
+            DockerBuildResponse: An object contains image id and tags.
+
+        Raises:
+            RuntimeError: If the Docker build fails for any reason.
         """
         try:
             logging.info(f"Building image for job {job_id}")
@@ -63,13 +66,11 @@ class DockerService(DockerServiceInterface):
                 forcerm=True,
             )
             logging.info(f"Successfully built image with ID: {image.id}\n")
-            return DockerBuildResponse(success=True, image_id=image.id)
+            return DockerBuildImageResponse(image_id=image.id, tags=image.tags)
         except (docker.errors.BuildError, docker.errors.APIError) as e:
-            logging.error(f"Docker Error: {str(e)}")
-            return DockerBuildResponse(success=False, error=f"Docker Error : {str(e)}")
+            raise RuntimeError(f"Docker Error : {str(e)}") from e
         except Exception as e:
-            logging.error(f"Failed to build image: {str(e)}")
-            return DockerBuildResponse(success=False, error=str(e))
+            raise RuntimeError(str(e)) from e
 
     def scan_image(self, image_id: str) -> ScanResult:
         """
@@ -97,7 +98,7 @@ class DockerService(DockerServiceInterface):
             logging.error("Failed to parse Trivy output as JSON.")
             raise
 
-    def run_container(self, image_id: str, job_id: str) -> DockerRunResponse:
+    def run_container(self, image_id: str, job_id: str) -> DockerRunContainerResponse:
         """
         Run a container with a mounted volume and process its output
         Args:
@@ -155,8 +156,8 @@ class DockerService(DockerServiceInterface):
     # Data handling methods
     # -------------------
 
-    def _setup_workspace(self) -> None:
-        """Setup workspace directories"""
+    def _setup_volume_directory(self) -> None:
+        """Setup volume directory"""
         settings.volume_base_path.mkdir(parents=True, exist_ok=True)
         logging.info(f"Initialized volume base path: {settings.volume_base_path}")
 
@@ -181,7 +182,9 @@ class DockerService(DockerServiceInterface):
     # Helper methods
     # -------------
 
-    def _process_container_execution(self, container: Container, job_id: str, job_data_dir: Path) -> DockerRunResponse:
+    def _process_container_execution(
+        self, container: Container, job_id: str, job_data_dir: Path
+    ) -> DockerRunContainerResponse:
         """Process container execution and verify results"""
         exit_status, logs = self._wait_for_container(container)
 
@@ -191,18 +194,18 @@ class DockerService(DockerServiceInterface):
         if not self._verify_job_data(job_data_dir, job_id):
             return self._create_error_response(container, f"No data was written to the job directory {job_id}")
 
-        return DockerRunResponse(
+        return DockerRunContainerResponse(
             success=True,
             container_id=container.id,
             performance=None,  # We're not reading performance data at this stage
         )
 
-    def _create_error_response(self, container: Container | None, error: str) -> DockerRunResponse:
+    def _create_error_response(self, container: Container | None, error: str) -> DockerRunContainerResponse:
         """Create standardized error response"""
         logging.error(error)
-        return DockerRunResponse(success=False, container_id=container.id if container else None, error=error)
+        return DockerRunContainerResponse(success=False, container_id=container.id if container else None, error=error)
 
-    def _handle_container_error(self, container: Container | None, error: Exception) -> DockerRunResponse:
+    def _handle_container_error(self, container: Container | None, error: Exception) -> DockerRunContainerResponse:
         """Handle container runtime errors"""
         error_msg = f"Error running container: {str(error)}"
         logging.error(error_msg)
