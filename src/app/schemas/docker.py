@@ -19,12 +19,17 @@ class DockerBuildImageResponse(BaseModel):
 class DockerRunContainerResponse(BaseModel):
     """Response model for Docker run operation"""
 
-    success: bool = Field(..., description="Whether the container ran successfully")
-    container_id: str | None = Field(None, description="ID of the container if created")
+    image_id: str = Field(..., description="ID of the image used to create the container")
+    container_id: str = Field(..., description="ID of the container")
+    status: str = Field(..., description="Status of the container (e.g., exited, running)")
     performance: float | None = Field(None, description="Performance metric from container execution")
-    error: str | None = Field(None, description="Error message if run failed")
 
     class Config:
         json_schema_extra = {
-            "example": {"success": True, "container_id": "abcdef1234567890", "performance": 0.99, "error": None}
+            "example": {
+                "image_id": "sha256:1234567890abcdef",
+                "container_id": "abcdef1234567890",
+                "status": "exited",
+                "performance": 0.99,
+            }
         }

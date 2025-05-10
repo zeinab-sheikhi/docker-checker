@@ -43,26 +43,31 @@ class JobService:
                 scan_result = self.docker_service.scan_image(image.image_id)
                 scan_report_str = format_vulnerabilities(scan_result.vulnerabilities)
 
-            # # Run container
-            # logging.info(f"Starting container run for image {build_result.image_id}")
-            # run_result = self.docker_service.run_container(build_result.image_id, job_id)
-            # logging.info(f"Run result: {run_result}")
+                # Only run container if scan passes (is_safe)
+                if not scan_result.is_safe:
+                    logging.error(f"Image {image.image_id} is not safe to run. Skipping container execution.")
+                    return JobResponse(
+                        status=JobStatus.FAILED,
+                        performance=None,
+                        job_id=job_id,
+                        scan_report=scan_report_str,
+                    )
 
-            # if not run_result.success:
-            #     error_msg = run_result.error or "Unknown run error"
-            #     logging.error(f"Container run failed: {error_msg}")
-            #     return JobResponse(
-            #         status=JobStatus.FAILED,
-            #         message=error_msg,
-            #         job_id=job_id,
-            #         scan_report=scan_report_str,
-            #     )
+                # Run container
+                logging.info(f"Starting container run for image {image.image_id}")
+                run_result = self.docker_service.run_container(image.image_id, job_id)
 
+                return JobResponse(
+                    status=JobStatus.SUCCESS,
+                    performance=run_result.performance,
+                    job_id=job_id,
+                    scan_report=scan_report_str,
+                )
             return JobResponse(
-                status=JobStatus.SUCCESS,
+                status=JobStatus.FAILED,
                 performance=None,
                 job_id=job_id,
-                scan_report=scan_report_str,
+                scan_report=None,
             )
 
         finally:
