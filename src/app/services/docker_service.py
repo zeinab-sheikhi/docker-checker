@@ -19,12 +19,12 @@ class DockerServiceInterface(Protocol):
         """Build a Docker image from a Dockerfile."""
         ...
 
-    def run_container(self, image_id: str, job_id: str) -> DockerRunResponse:
-        """Run a container from an image and process its output."""
+    def scan_image(self, image_id: str) -> ScanResult:
+        """Scan a Docker image for vulnerabilities using Trivy."""
         ...
 
-    def scan_image_with_trivy(self, image_id: str) -> ScanResult:
-        """Scan a Docker image for vulnerabilities using Trivy."""
+    def run_container(self, image_id: str, job_id: str) -> DockerRunResponse:
+        """Run a container from an image and process its output."""
         ...
 
 
@@ -45,12 +45,14 @@ class DockerService(DockerServiceInterface):
 
     def build_image(self, dockerfile: BinaryIO, job_id: str) -> DockerBuildResponse:
         """
-        Build a Docker image from a dockerfile
+        Build a Docker image from a Dockerfile.
+
         Args:
-            dockerfile: File object containing Dockerfile content
-            job_id: Unique identifier for this job
+            dockerfile (BinaryIO): A file-like object opened in binary mode containing the Dockerfile content.
+            job_id (str): A unique identifier for the job, used to tag the built image.
+
         Returns:
-            DockerBuildResponse indicating build success/failure
+            DockerBuildResponse: An object indicating whether the build was successful, the image ID if successful, or an error message if failed.
         """
         try:
             logging.info(f"Building image for job {job_id}")
@@ -60,11 +62,40 @@ class DockerService(DockerServiceInterface):
                 rm=True,
                 forcerm=True,
             )
-            logging.info(f"Successfully built image: {image.id}")
+            logging.info(f"Successfully built image with ID: {image.id}\n")
             return DockerBuildResponse(success=True, image_id=image.id)
+        except (docker.errors.BuildError, docker.errors.APIError) as e:
+            logging.error(f"Docker Error: {str(e)}")
+            return DockerBuildResponse(success=False, error=f"Docker Error : {str(e)}")
         except Exception as e:
             logging.error(f"Failed to build image: {str(e)}")
             return DockerBuildResponse(success=False, error=str(e))
+
+    def scan_image(self, image_id: str) -> ScanResult:
+        """
+        Scan a Docker image using Trivy and return the parsed result.
+        """
+        cmd = ["trivy", "image", "--format", "json", "--severity", "HIGH,CRITICAL", image_id]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            data = json.loads(result.stdout)
+            report = TrivyReportModel(**data)
+            vulnerabilities: list[VulnerabilitySummary] = []
+            is_safe = True
+            for result in report.Results:
+                if result.Vulnerabilities:
+                    for vuln in result.Vulnerabilities:
+                        vulnerabilities.append(VulnerabilitySummary(**vuln.model_dump()))
+                        if vuln.Severity in ("HIGH", "CRITICAL"):
+                            is_safe = False
+            return ScanResult(is_safe=is_safe, vulnerabilities=vulnerabilities)
+
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Trivy scan failed: {e.stderr}")
+            raise
+        except json.JSONDecodeError:
+            logging.error("Failed to parse Trivy output as JSON.")
+            raise
 
     def run_container(self, image_id: str, job_id: str) -> DockerRunResponse:
         """
@@ -110,7 +141,6 @@ class DockerService(DockerServiceInterface):
         """Wait for container completion and get logs"""
         result = container.wait(timeout=self.timeout)
         logs = container.logs().decode("utf-8").strip()
-        self._log_container_output(logs)
         return result["StatusCode"], logs
 
     def _cleanup_container(self, container: Container | None) -> None:
@@ -180,43 +210,3 @@ class DockerService(DockerServiceInterface):
             logs = container.logs().decode("utf-8")
             logging.error(f"Container logs before error: {logs}")
         return self._create_error_response(container, error_msg)
-
-    def _log_container_output(self, logs: str) -> None:
-        """Log container output in a consistent format"""
-        for line in logs.split("\n"):
-            logging.info(f"Container output: {line}")
-
-    def scan_image_with_trivy(self, image_id: str) -> ScanResult:
-        """
-        Scan a Docker image using Trivy and return the parsed result.
-        """
-        cmd = ["trivy", "image", "--format", "json", "--severity", "HIGH,CRITICAL", image_id]
-        try:
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-            data = json.loads(result.stdout)
-            report = TrivyReportModel(**data)
-            vulnerabilities: list[VulnerabilitySummary] = []
-            is_safe = True
-            for result in report.Results:
-                if result.Vulnerabilities:
-                    for vuln in result.Vulnerabilities:
-                        vulnerabilities.append(
-                            VulnerabilitySummary(
-                                package=vuln.PkgName,
-                                vulnerability_id=vuln.VulnerabilityID,
-                                severity=vuln.Severity,
-                                title=vuln.Title,
-                                description=vuln.Description,
-                                fixed_version=vuln.FixedVersion,
-                            )
-                        )
-                        if vuln.Severity in ("HIGH", "CRITICAL"):
-                            is_safe = False
-            return ScanResult(is_safe=is_safe, vulnerabilities=vulnerabilities)
-
-        except subprocess.CalledProcessError as e:
-            logging.error(f"Trivy scan failed: {e.stderr}")
-            raise
-        except json.JSONDecodeError:
-            logging.error("Failed to parse Trivy output as JSON.")
-            raise

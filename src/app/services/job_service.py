@@ -49,7 +49,7 @@ class JobService:
 
             # Scan image with Trivy
             logging.info(f"Scanning image {build_result.image_id} for vulnerabilities")
-            scan_result = self.docker_service.scan_image_with_trivy(build_result.image_id)
+            scan_result = self.docker_service.scan_image(build_result.image_id)
             scan_report_str = format_vulnerabilities(scan_result.vulnerabilities)
 
             # Run container
