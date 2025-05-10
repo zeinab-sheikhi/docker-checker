@@ -16,15 +16,15 @@ class DockerServiceInterface(Protocol):
     """Interface for Docker operations"""
 
     def build_image(self, dockerfile: BinaryIO, job_id: str) -> DockerBuildResponse:
-        """Build a Docker image"""
+        """Build a Docker image from a Dockerfile."""
         ...
 
     def run_container(self, image_id: str, job_id: str) -> DockerRunResponse:
-        """Run a container and get its output"""
+        """Run a container from an image and process its output."""
         ...
 
     def scan_image_with_trivy(self, image_id: str) -> ScanResult:
-        """Scan a Docker image using Trivy and return the parsed result."""
+        """Scan a Docker image for vulnerabilities using Trivy."""
         ...
 
 

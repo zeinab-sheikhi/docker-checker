@@ -35,7 +35,6 @@ class Settings(BaseSettings):
     app_config: AppConfig = AppConfig()
 
     # Docker settings
-    docker_storage_path: str = "storage/dockerfiles"
     docker_cleanup_images: bool = True  # Whether to cleanup images after use
     docker_timeout: int = 30
 
