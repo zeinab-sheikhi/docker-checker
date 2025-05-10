@@ -8,10 +8,16 @@ from typing import BinaryIO, Protocol
 
 import docker
 from docker.models.containers import Container
-
-from app.schemas.docker import DockerBuildImageResponse, DockerRunContainerResponse
-from app.schemas.trivy import ScanResult, TrivyReportModel, VulnerabilitySummary
-from app.settings import settings
+from docker_scanner.schemas.docker import (
+    DockerBuildImageResponse,
+    DockerRunContainerResponse,
+)
+from docker_scanner.schemas.trivy import (
+    ScanResult,
+    TrivyReportModel,
+    VulnerabilitySummary,
+)
+from docker_scanner.settings import settings
 
 
 class DockerServiceInterface(Protocol):
@@ -102,9 +108,9 @@ class DockerService(DockerServiceInterface):
             report = TrivyReportModel(**data)
             vulnerabilities: list[VulnerabilitySummary] = []
             is_safe = True
-            for result in report.Results:
-                if result.Vulnerabilities:
-                    for vuln in result.Vulnerabilities:
+            for scan_result in report.Results:
+                if scan_result.Vulnerabilities:
+                    for vuln in scan_result.Vulnerabilities:
                         vulnerabilities.append(VulnerabilitySummary(**vuln.model_dump()))
                         if vuln.Severity in ("HIGH", "CRITICAL"):
                             is_safe = False

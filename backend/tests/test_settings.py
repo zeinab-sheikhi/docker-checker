@@ -1,4 +1,4 @@
-from app.settings import Settings
+from docker_scanner.settings import Settings
 
 
 def test_settings() -> None:

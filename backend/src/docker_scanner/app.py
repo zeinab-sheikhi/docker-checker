@@ -1,9 +1,7 @@
-import uvicorn
+from docker_checker.routers.jobs import router as jobs_router
+from docker_checker.settings import settings
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, RedirectResponse
-
-from app.routers.jobs import router as jobs_router
-from app.settings import settings
 
 app = FastAPI(**settings.get_app_kwargs())
 
@@ -20,7 +18,3 @@ async def root():
 def health() -> JSONResponse:
     """Health check endpoint."""
     return JSONResponse(content={"message": "API is running."}, status_code=200)
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host=settings.server_host, port=settings.server_port, workers=settings.server_workers)

@@ -1,7 +1,7 @@
 [project]
-name = "docker-check"
+name = "docker-scanner"
 version = "0.1.0"
-description = "Docker Check Server"
+description = "Docker Scanner Server"
 authors = [
     { name="Zeinab Sheikhi", email="zeinab.sheikhitarghi@owkin.com" },
 ]
@@ -40,12 +40,11 @@ dev-dependencies = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-# [project.scripts]
-# "k.api:server" sth like this must be added
-# docker-checker = ""
+[project.scripts]
+docker-scanner = "docker_scanner.main:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/app"]
+packages = ["src/docker_scanner"]
 
 [tool.ruff]
 target-version = "py310"

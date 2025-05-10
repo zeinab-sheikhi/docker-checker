@@ -1,11 +1,10 @@
 import logging
 import uuid
 
-from fastapi import UploadFile
-
 from app.schemas.job import JobResponse, JobStatus
 from app.schemas.trivy import format_vulnerabilities
 from app.services.docker_service import DockerServiceInterface
+from fastapi import UploadFile
 
 logging.basicConfig(level=logging.INFO)
 
@@ -63,6 +62,7 @@ class JobService:
                     job_id=job_id,
                     scan_report=scan_report_str,
                 )
+
             return JobResponse(
                 status=JobStatus.FAILED,
                 performance=None,

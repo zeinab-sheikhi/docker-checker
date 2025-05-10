@@ -190,7 +190,7 @@ wheels = [
 ]
 
 [[package]]
-name = "docker-check"
+name = "docker-scanner"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
