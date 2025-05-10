@@ -1,0 +1,28 @@
+name: docker_scanner
+description: "A Flutter web app for Docker image scanning."
+version: 1.0.0+1
+publish_to: 'none'
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.1
+  file_picker: ^6.1.1
+  cupertino_icons: ^1.0.8
+  fl_chart: ^1.0.0
+  flutter_highlight: ^0.7.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  fonts:
+    - family: JetBrainsMono
+      fonts:
+        - asset: fonts/JetBrainsMono-Regular.ttf
+  uses-material-design: true

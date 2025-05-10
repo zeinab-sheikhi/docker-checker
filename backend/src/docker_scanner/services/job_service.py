@@ -1,10 +1,11 @@
 import logging
 import uuid
 
-from app.schemas.job import JobResponse, JobStatus
-from app.schemas.trivy import format_vulnerabilities
-from app.services.docker_service import DockerServiceInterface
 from fastapi import UploadFile
+
+from docker_scanner.schemas.job import JobResponse, JobStatus
+from docker_scanner.schemas.trivy import format_vulnerabilities
+from docker_scanner.services.docker_service import DockerServiceInterface
 
 logging.basicConfig(level=logging.INFO)
 

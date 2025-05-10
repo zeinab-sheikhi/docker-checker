@@ -1,7 +1,8 @@
-from docker_checker.routers.jobs import router as jobs_router
-from docker_checker.settings import settings
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse, RedirectResponse
+
+from docker_scanner.routers.jobs import router as jobs_router
+from docker_scanner.settings import settings
 
 app = FastAPI(**settings.get_app_kwargs())
 

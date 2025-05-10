@@ -1,10 +1,10 @@
 import uvicorn
-from docker_checker.settings import settings
 
+from docker_scanner.settings import settings
 
 def main():
     uvicorn.run(
-        "docker_checker.app:app",
+        "docker_scanner.app:app",
         host=settings.server_host,
         port=settings.server_port,
         workers=settings.server_workers,

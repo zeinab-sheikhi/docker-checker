@@ -1,7 +1,8 @@
-from docker_checker.schemas.job import JobResponse
-from docker_checker.services.docker_service import DockerService
-from docker_checker.services.job_service import JobService
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+
+from docker_scanner.schemas.job import JobResponse
+from docker_scanner.services.docker_service import DockerService
+from docker_scanner.services.job_service import JobService
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
