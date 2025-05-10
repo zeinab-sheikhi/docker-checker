@@ -4,6 +4,7 @@ import uuid
 from fastapi import UploadFile
 
 from app.schemas.job import JobResponse, JobStatus
+from app.schemas.trivy import format_vulnerabilities
 from app.services.docker_service import DockerServiceInterface
 
 logging.basicConfig(level=logging.INFO)
@@ -24,7 +25,8 @@ class JobService:
         """
         Process uploaded Dockerfile:
         1. Build image from uploaded file
-        2. Run container and get performance from output
+        2. Scan image for vulnerabilities
+        3. If scan passes, run container and get performance from output
         Returns: JobResponse with status and performance
         """
         job_id = str(uuid.uuid4())
@@ -45,6 +47,11 @@ class JobService:
                     job_id=job_id,
                 )
 
+            # Scan image with Trivy
+            logging.info(f"Scanning image {build_result.image_id} for vulnerabilities")
+            scan_result = self.docker_service.scan_image_with_trivy(build_result.image_id)
+            scan_report_str = format_vulnerabilities(scan_result.vulnerabilities)
+
             # Run container
             logging.info(f"Starting container run for image {build_result.image_id}")
             run_result = self.docker_service.run_container(build_result.image_id, job_id)
@@ -57,12 +64,14 @@ class JobService:
                     status=JobStatus.FAILED,
                     message=error_msg,
                     job_id=job_id,
+                    scan_report=scan_report_str,
                 )
 
             return JobResponse(
                 status=JobStatus.SUCCESS,
                 performance=run_result.performance,
                 job_id=job_id,
+                scan_report=scan_report_str,
             )
 
         except Exception as e:
@@ -71,6 +80,7 @@ class JobService:
                 status=JobStatus.FAILED,
                 message=str(e),
                 job_id=job_id,
+                scan_report=scan_report_str,
             )
         finally:
             file.file.close()

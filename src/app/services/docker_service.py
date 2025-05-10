@@ -1,4 +1,6 @@
+import json
 import logging
+import subprocess
 from pathlib import Path
 from typing import BinaryIO, Protocol
 
@@ -6,6 +8,7 @@ import docker
 from docker.models.containers import Container
 
 from app.schemas.docker import DockerBuildResponse, DockerRunResponse
+from app.schemas.trivy import ScanResult, TrivyReportModel, VulnerabilitySummary
 from app.settings import settings
 
 
@@ -18,6 +21,10 @@ class DockerServiceInterface(Protocol):
 
     def run_container(self, image_id: str, job_id: str) -> DockerRunResponse:
         """Run a container and get its output"""
+        ...
+
+    def scan_image_with_trivy(self, image_id: str) -> ScanResult:
+        """Scan a Docker image using Trivy and return the parsed result."""
         ...
 
 
@@ -178,3 +185,38 @@ class DockerService(DockerServiceInterface):
         """Log container output in a consistent format"""
         for line in logs.split("\n"):
             logging.info(f"Container output: {line}")
+
+    def scan_image_with_trivy(self, image_id: str) -> ScanResult:
+        """
+        Scan a Docker image using Trivy and return the parsed result.
+        """
+        cmd = ["trivy", "image", "--format", "json", "--severity", "HIGH,CRITICAL", image_id]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            data = json.loads(result.stdout)
+            report = TrivyReportModel(**data)
+            vulnerabilities: list[VulnerabilitySummary] = []
+            is_safe = True
+            for result in report.Results:
+                if result.Vulnerabilities:
+                    for vuln in result.Vulnerabilities:
+                        vulnerabilities.append(
+                            VulnerabilitySummary(
+                                package=vuln.PkgName,
+                                vulnerability_id=vuln.VulnerabilityID,
+                                severity=vuln.Severity,
+                                title=vuln.Title,
+                                description=vuln.Description,
+                                fixed_version=vuln.FixedVersion,
+                            )
+                        )
+                        if vuln.Severity in ("HIGH", "CRITICAL"):
+                            is_safe = False
+            return ScanResult(is_safe=is_safe, vulnerabilities=vulnerabilities)
+
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Trivy scan failed: {e.stderr}")
+            raise
+        except json.JSONDecodeError:
+            logging.error("Failed to parse Trivy output as JSON.")
+            raise

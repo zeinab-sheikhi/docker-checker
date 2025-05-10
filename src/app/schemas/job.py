@@ -20,6 +20,7 @@ class JobResponse(BaseModel):
     status: JobStatus = Field(..., description="Current status of the job")
     performance: float | None = Field(None, description="Performance metric if job succeeded")
     message: str | None = Field(None, description="Error message if job failed")
+    scan_report: str | None = Field(None, description="Scan report")
 
     class Config:
         json_schema_extra = {
