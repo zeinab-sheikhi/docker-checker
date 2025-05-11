@@ -40,6 +40,8 @@ class JobService:
                 dockerfile=file.file,
                 job_id=job_id,
             )
+            logging.info(f"Job ID: {job_id}")
+            logging.info(f"Image built: {image.image_id}")
 
             # Scan image with Trivy
             logging.info(f"Scanning image {image.image_id} for vulnerabilities")

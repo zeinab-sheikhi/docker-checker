@@ -31,7 +31,7 @@ class JobResponse(BaseModel):
     status: JobStatus = Field(..., description="Current status of the job")
     performance: float | None = Field(None, description="Performance metric if job succeeded")
     scan_report: str | None = Field(None, description="Scan report")
-    vulnerabilitys: list[VulnerabilitySeverityCount] | None = Field(
+    vulnerabilities: list[VulnerabilitySeverityCount] | None = Field(
         None, description="List of vulnerability counts by severity"
     )
 

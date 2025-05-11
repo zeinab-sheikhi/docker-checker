@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class CustomButton extends StatelessWidget {
+class MyButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
   final bool isProcessing;
@@ -15,7 +15,7 @@ class CustomButton extends StatelessWidget {
   final double width;
   final double height;
 
-  const CustomButton({
+  const MyButton({
     super.key,
     required this.text,
     required this.onPressed,
@@ -50,7 +50,7 @@ class CustomButton extends StatelessWidget {
             ),
             textStyle: const TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 22,
+              fontSize: 20,
             ),
             padding: EdgeInsets.zero,
           ),
@@ -99,4 +99,4 @@ class CustomButton extends StatelessWidget {
       ),
     );
   }
-} 
+}

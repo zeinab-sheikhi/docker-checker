@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 
-from docker_scanner.schemas.job import JobResponse
+from docker_scanner.schemas.job import ErrorResponse, JobResponse
 from docker_scanner.services.docker_service import DockerService
 from docker_scanner.services.job_service import JobService
 
@@ -16,7 +16,11 @@ def get_job_service() -> JobService:
 job_service_dependency = Depends(get_job_service)
 
 
-@router.post("/", response_model=JobResponse)
+@router.post(
+    "",
+    response_model=JobResponse,
+    responses={500: {"model": ErrorResponse}},
+)
 async def create_job(
     file: UploadFile,
     job_service: JobService = job_service_dependency,
