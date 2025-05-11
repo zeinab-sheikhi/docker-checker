@@ -34,17 +34,10 @@ class JobService:
         """
         try:
             content = file.file.read().decode("utf-8", errors="ignore")
-            # Check for at least one FROM instruction (not in a comment)
-            has_from = any(
-                line.strip().upper().startswith("FROM")
-                for line in content.splitlines()
-                if line.strip() and not line.strip().startswith("#")
-            )
-            if not has_from:
-                logging.error("Invalid Dockerfile: no FROM instruction found")
-                raise ValueError(
-                    "The uploaded file is not a valid Dockerfile. It must contain at least one FROM instruction."
-                )
+            # Get all non-empty, non-comment lines
+            lines = [line.strip() for line in content.splitlines() if line.strip() and not line.strip().startswith("#")]
+            if not lines or not lines[0].upper().startswith("FROM"):
+                raise ValueError("The uploaded file is not a valid Dockerfile. The first instruction must be FROM.")
             job_id = str(uuid.uuid4())
             self.redis_service.save_job_data(job_id, {"dockerfile": content})
             return job_id

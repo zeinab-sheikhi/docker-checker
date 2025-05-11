@@ -12,6 +12,9 @@ const Color black = Colors.black;
 const Color white = Colors.white;
 const Color grey = Colors.grey;
 const Color kErrorColor = Colors.red;
+const Color kErrorBoxBackground = Color(0xFFFEF2F2);
+const Color kErrorBoxBorder = Color(0xFFE89495);
+const Color kErrorBoxText = Color(0xFFB91C1B);
 
 // Severity Colors
 const Color kCriticalSeverity = Colors.redAccent;

@@ -6,7 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:docker_scanner/providers/job_provider.dart';
 import 'package:docker_scanner/widgets/my_container.dart';
 import 'package:docker_scanner/widgets/my_button.dart';
-import 'package:docker_scanner/consts.dart';
+import 'package:docker_scanner/widgets/my_text_form_field.dart';
+import 'package:docker_scanner/widgets/my_error_box.dart';
 
 class UploadContainer extends StatefulWidget {
   const UploadContainer({super.key});
@@ -22,26 +23,22 @@ class _UploadContainerState extends State<UploadContainer> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        SizedBox(
+          width: 900,
+          child:
+              (jobProvider.error != null)
+                  ? ErrorMessageBox(message: jobProvider.error ?? '')
+                  : const SizedBox(),
+        ),
         MyContainer(
           width: 900,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Expanded(child: SizedBox()),
-              _uploadButton(jobProvider),
+              Expanded(flex: 3, child: _jobIdTextFormField(jobProvider)),
+              const SizedBox(width: 32),
+              Expanded(flex: 1, child: _uploadButton(jobProvider)),
             ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(top: 16),
-          child: Text(
-            jobProvider.jobIdResponse != null
-                ? 'Job ID: ${jobProvider.jobIdResponse!.jobId}'
-                : (jobProvider.error ?? ''),
-            style: TextStyle(
-              color: jobProvider.jobIdResponse != null ? black : kErrorColor,
-              fontWeight: FontWeight.bold,
-            ),
           ),
         ),
       ],
@@ -58,6 +55,7 @@ Widget _uploadButton(JobProvider jobProvider) {
         jobProvider.isLoading
             ? null // the button must be disabled when it is calling the API
             : () async {
+              jobProvider.jobIdController.clear();
               // Pick the file
               final picked = await _pickFile();
               if (picked.fileBytes != null && picked.filename != null) {
@@ -69,6 +67,16 @@ Widget _uploadButton(JobProvider jobProvider) {
                 jobProvider.setError(picked.error ?? "Unknown error.");
               }
             },
+  );
+}
+
+Widget _jobIdTextFormField(JobProvider jobProvider) {
+  return JobIdTextFormField(
+    controller: jobProvider.jobIdController,
+    hintText: 'Enter Job ID',
+    onChanged: (value) {
+      jobProvider.jobIdController.text = value;
+    },
   );
 }
 

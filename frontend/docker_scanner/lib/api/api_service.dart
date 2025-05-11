@@ -68,7 +68,7 @@ class ApiService {
       } catch (_) {
         errorMsg = response.body;
       }
-      throw ApiException('Failed to submit Dockerfile: $errorMsg');
+      throw ApiException(errorMsg);
     }
   }
 }

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import '../api/api_service.dart';
 import '../api/models.dart';
 import 'package:flutter/foundation.dart';
@@ -7,6 +9,7 @@ class JobProvider with ChangeNotifier {
   JobResponse? jobResponse;
   String? error;
   bool isLoading = false;
+  final TextEditingController jobIdController = TextEditingController();
 
   // Submit Dockerfile and get job ID
   Future<void> submitDockerfile(Uint8List fileBytes, String filename) async {
@@ -16,7 +19,10 @@ class JobProvider with ChangeNotifier {
     notifyListeners();
     try {
       jobIdResponse = await ApiService.submitDockerfile(fileBytes, filename);
-      await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(
+        const Duration(seconds: 2),
+      ); // added for nice transition
+      jobIdController.text = jobIdResponse!.jobId;
     } catch (e) {
       error = e.toString();
     }
@@ -26,14 +32,14 @@ class JobProvider with ChangeNotifier {
 
   void setError(String message) {
     error = message;
-    jobIdResponse = null; // Clear previous job ID
+    jobIdResponse = null;
     notifyListeners();
   }
 
-  void clear() {
-    jobIdResponse = null;
-    error = null;
-    isLoading = false;
+  @override
+  void dispose() {
+    jobIdController.dispose();
+    super.dispose();
   }
 
   // Upload Dockerfile and get scan result (JobResponse)
