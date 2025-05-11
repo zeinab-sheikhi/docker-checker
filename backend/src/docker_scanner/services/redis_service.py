@@ -15,7 +15,7 @@ class RedisService:
     ):
         self.client = redis.Redis(host=host, port=port, db=db, decode_responses=True)
 
-    def save_job_data(self, job_id: str, data: dict[str, Any], expire_seconds: int | None = None):
+    def update_job_data(self, job_id: str, data: dict[str, Any], expire_seconds: int | None = None):
         """
         Save a mapping of job data (dockerfile, perf, perf_json, etc.) for a job_id.
         Optionally set an expiration time in seconds.

@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, status
 from fastapi.responses import JSONResponse
 
-from docker_scanner.schemas.job import ErrorResponse, JobResponse
+from docker_scanner.schemas.job import ErrorResponse
+from docker_scanner.schemas.job_status import JobStatusResponse
 from docker_scanner.services.docker_service import DockerService
 from docker_scanner.services.job_service import JobService
 
@@ -21,19 +22,22 @@ job_service_dependency = Depends(get_job_service)
     "/",
     response_model=None,
     responses={
-        200: {"job_id": "Job ID returned"},
-        400: {"error": "Invalid Dockerfile"},
+        200: {"model": dict, "description": "Job ID returned"},
+        400: {"model": ErrorResponse, "description": "Invalid Dockerfile"},
     },
 )
-async def submit_dockerfile(
+async def create_job(
+    background_tasks: BackgroundTasks,
     file: UploadFile,
     job_service: JobService = job_service_dependency,
 ):
     """
     Submit a Dockerfile and get a job ID if valid.
+    Starts processing the job in the background.
     """
     try:
-        job_id = job_service.check_dockerfile(file)
+        job_id = job_service.create_job(file)
+        background_tasks.add_task(job_service.process_job, job_id)
         return JSONResponse(status_code=200, content={"job_id": job_id})
     except ValueError as err:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)) from err
@@ -41,22 +45,21 @@ async def submit_dockerfile(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)) from err
 
 
-@router.post(
-    "/status",
-    response_model=JobResponse,
-    responses={500: {"model": ErrorResponse}},
+@router.get(
+    "/status/{job_id}",
+    response_model=JobStatusResponse,
+    responses={404: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
 )
-async def create_job(
-    file: UploadFile,
+async def check_job_status(
+    job_id: str,
     job_service: JobService = job_service_dependency,
-) -> JobResponse:
+) -> JobStatusResponse:
     """
-    Submit a dockerfile and create a new job.
-    Returns the job status and performance if successful.
+    Retrieve the status and performance of a job by job_id.
     """
     try:
-        return job_service.scan_dockerfile(file)
+        return job_service.get_job_status(job_id)
     except ValueError as err:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)) from err
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(err)) from err
     except Exception as err:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(err)) from err
