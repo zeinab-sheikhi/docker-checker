@@ -9,6 +9,8 @@ const Color kPrimaryLight = Color(0xFFFFF4DA);
 const Color kButtonBorder = Color(0xFF23272F);
 const Color kShadow = Colors.black12;
 const Color black = Colors.black;
+const Color white = Colors.white;
+const Color grey = Colors.grey;
 
 // Severity Colors
 const Color kCriticalSeverity = Colors.redAccent;

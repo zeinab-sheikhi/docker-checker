@@ -13,15 +13,27 @@ class JobResponse {
     this.vulnerabilitySummary,
   });
 
+  @override
+  String toString() {
+    return '''
+JobResponse {
+  id: $jobId,
+  status: $status,
+  scanReport: $scanReport,
+  vulnerabilitySummary: $vulnerabilitySummary
+}''';
+  }
+
   factory JobResponse.fromJson(Map<String, dynamic> json) {
     return JobResponse(
       jobId: json['job_id'],
       status: json['status'],
       performance: (json['performance'] as num?)?.toDouble(),
       scanReport: json['scan_report'],
-      vulnerabilitySummary: (json['vulnerabilities'] as List?)
-          ?.map((e) => VulnerabilitySummary.fromJson(e))
-          .toList(),
+      vulnerabilitySummary:
+          (json['vulnerabilities'] as List?)
+              ?.map((e) => VulnerabilitySummary.fromJson(e))
+              .toList(),
     );
   }
 }

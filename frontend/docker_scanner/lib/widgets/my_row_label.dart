@@ -4,8 +4,14 @@ import '../consts.dart';
 class MyRowLabel extends StatelessWidget {
   final String label;
   final Widget? rightChild;
+  final double fontSize;
 
-  const MyRowLabel({super.key, required this.label, this.rightChild});
+  const MyRowLabel({
+    super.key,
+    required this.label,
+    this.rightChild,
+    this.fontSize = 20,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -13,9 +19,9 @@ class MyRowLabel extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 18,
+            fontSize: fontSize,
             color: kTextColor,
           ),
         ),

@@ -80,6 +80,6 @@ def format_vulnerabilities(vulnerabilities: list) -> str:
             f"Severity: {getattr(vuln, 'severity', '')}\n"
             f"Title: {getattr(vuln, 'title', '')}\n"
             f"Description: {(getattr(vuln, 'description', '') or '')[:100]}...\n"
-            f"Fixed Version: {getattr(vuln, 'fixed_version', '')}\n" + "-" * 60
+            f"Fixed Version: {getattr(vuln, 'fixed_version', '')}\n\n"
         )
     return "\n".join(lines)

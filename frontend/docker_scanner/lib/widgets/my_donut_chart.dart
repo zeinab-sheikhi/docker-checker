@@ -2,26 +2,26 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../consts.dart';
 
-class MyRingChart extends StatefulWidget {
+class MyDonutChart extends StatefulWidget {
   final Map<String, int> severityCounts;
 
-  const MyRingChart({super.key, required this.severityCounts});
+  const MyDonutChart({super.key, required this.severityCounts});
 
   @override
-  State<MyRingChart> createState() => _MyRingChartState();
+  State<MyDonutChart> createState() => _MyDonutChartState();
 }
 
-class _MyRingChartState extends State<MyRingChart> {
+class _MyDonutChartState extends State<MyDonutChart> {
   int? touchedIndex;
 
   @override
   Widget build(BuildContext context) {
     final total = widget.severityCounts.values.fold<int>(0, (a, b) => a + b);
     final colors = {
-      'Critical': kCriticalSeverity,
-      'High': kHighSeverity,
-      'Medium': kMediumSeverity,
-      'Low': kLowSeverity,
+      'critical': kCriticalSeverity,
+      'high': kHighSeverity,
+      'medium': kMediumSeverity,
+      'low': kLowSeverity,
     };
 
     final keys = widget.severityCounts.keys.toList();
@@ -30,16 +30,15 @@ class _MyRingChartState extends State<MyRingChart> {
     for (int i = 0; i < keys.length; i++) {
       final key = keys[i];
       final value = widget.severityCounts[key]!;
-      final percent = total > 0 ? (value / total * 100).round() : 0;
       final isTouched = i == touchedIndex;
       sections.add(
         PieChartSectionData(
-          color: colors[key] ?? Colors.grey,
+          color: colors[key.toLowerCase()] ?? grey,
           value: value.toDouble(),
-          title: '$percent%',
+          title: '$value',
           radius: isTouched ? 60 : 50,
           titleStyle: const TextStyle(
-            color: Colors.white,
+            color: white,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -86,7 +85,7 @@ class _MyRingChartState extends State<MyRingChart> {
           mainAxisAlignment: MainAxisAlignment.center,
           children:
               keys.map((key) {
-                final color = colors[key] ?? Colors.grey;
+                final color = colors[key.toLowerCase()] ?? grey;
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(

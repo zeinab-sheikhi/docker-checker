@@ -13,7 +13,7 @@ class MyContainer extends StatelessWidget {
   const MyContainer({
     super.key,
     required this.child,
-    this.backgroundColor = kPrimaryLight, // Use kPrimaryLight
+    this.backgroundColor = kPrimaryLight,
     this.width,
     this.height,
     this.padding = const EdgeInsets.all(40),

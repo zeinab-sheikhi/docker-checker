@@ -15,6 +15,7 @@ class MyButton extends StatelessWidget {
   final Color loaderColor;
   final double width;
   final double height;
+  final double fontSize;
 
   const MyButton({
     super.key,
@@ -31,6 +32,7 @@ class MyButton extends StatelessWidget {
     this.loaderColor = kTextColor,
     this.width = 220,
     this.height = 60,
+    this.fontSize = 20,
   });
 
   @override
@@ -49,9 +51,9 @@ class MyButton extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(borderRadius),
             ),
-            textStyle: const TextStyle(
+            textStyle: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 20,
+              fontSize: fontSize,
             ),
             padding: EdgeInsets.zero,
           ),

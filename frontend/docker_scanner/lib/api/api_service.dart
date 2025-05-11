@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'models.dart';
@@ -15,10 +14,19 @@ class ApiException implements Exception {
 class ApiService {
   static const String baseUrl = 'http://localhost:8000/api/v1';
 
-  static Future<JobResponse> uploadDockerfile(Uint8List fileBytes, String filename) async {
+  static Future<JobResponse> uploadDockerfile(
+    Uint8List fileBytes,
+    String filename,
+  ) async {
     final uri = Uri.parse('$baseUrl/jobs/');
     final request = http.MultipartRequest('POST', uri)
-      ..files.add(await http.MultipartFile.fromBytes('file', fileBytes, filename: filename));
+      ..files.add(
+        await http.MultipartFile.fromBytes(
+          'file',
+          fileBytes,
+          filename: filename,
+        ),
+      );
 
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
