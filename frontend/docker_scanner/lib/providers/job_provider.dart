@@ -12,6 +12,7 @@ class JobProvider with ChangeNotifier {
   Future<void> submitDockerfile(Uint8List fileBytes, String filename) async {
     isLoading = true;
     error = null;
+    jobIdResponse = null;
     notifyListeners();
     try {
       jobIdResponse = await ApiService.submitDockerfile(fileBytes, filename);
@@ -25,7 +26,14 @@ class JobProvider with ChangeNotifier {
 
   void setError(String message) {
     error = message;
+    jobIdResponse = null; // Clear previous job ID
     notifyListeners();
+  }
+
+  void clear() {
+    jobIdResponse = null;
+    error = null;
+    isLoading = false;
   }
 
   // Upload Dockerfile and get scan result (JobResponse)

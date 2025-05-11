@@ -1,3 +1,4 @@
+import 'package:docker_scanner/upload_container.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:convert';
@@ -17,12 +18,14 @@ void main() {
   runApp(
     ChangeNotifierProvider(
       create: (_) => JobProvider(),
-      child: DockerScannerApp(),
+      child: const DockerScannerApp(),
     ),
   );
 }
 
 class DockerScannerApp extends StatelessWidget {
+  const DockerScannerApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -34,7 +37,7 @@ class DockerScannerApp extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 48),
           child: Align(
             alignment: Alignment.topCenter,
-            child: UploadContainer(),
+            child: DockerScannerPage(),
           ),
         ),
       ),
@@ -42,14 +45,12 @@ class DockerScannerApp extends StatelessWidget {
   }
 }
 
-class UploadContainer extends StatefulWidget {
+class DockerScannerPage extends StatefulWidget {
   @override
-  State<UploadContainer> createState() => _UploadContainerState();
+  State<DockerScannerPage> createState() => _DockerScannerPageState();
 }
 
-final dummyData = {'Critical': 40, 'High': 15, 'Medium': 15, 'Low': 30};
-
-class _UploadContainerState extends State<UploadContainer> {
+class _DockerScannerPageState extends State<DockerScannerPage> {
   String? _fileContent;
   bool _showFile = false;
   bool _fileCopied = false;
@@ -99,6 +100,7 @@ class _UploadContainerState extends State<UploadContainer> {
         setState(() => _jobResponse = jobResponse);
       } on ApiException catch (e) {
         // Optionally show error
+        // jobProvider.setError(e.message);
       } finally {
         setState(() => _isLoading = false);
       }
@@ -225,64 +227,65 @@ class _UploadContainerState extends State<UploadContainer> {
     final jobProvider = Provider.of<JobProvider>(context);
 
     // Your file picking logic here
-    Uint8List? fileBytes;
-    String? filename;
+    // Uint8List? fileBytes;
+    // String? filename;
 
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          MyContainer(
-            width: 900,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Expanded(child: SizedBox()),
-                MyButton(
-                  text: 'Upload',
-                  onPressed:
-                      jobProvider.isLoading
-                          ? null
-                          : () async {
-                            // Pick the file
-                            FilePickerResult? result = await FilePicker.platform
-                                .pickFiles(withData: true);
-                            if (result != null &&
-                                result.files.single.bytes != null) {
-                              final fileBytes = result.files.single.bytes!;
-                              final filename = result.files.single.name;
-                              await jobProvider.submitDockerfile(
-                                fileBytes,
-                                filename,
-                              );
-                            } else {
-                              // Optionally, you can set an error in the provider or show a message
-                              jobProvider.error = "No file selected.";
-                              jobProvider.notifyListeners();
-                            }
-                          },
-                  isLoading: jobProvider.isLoading,
-                  loadingText: 'Processing...',
-                ),
-              ],
-            ),
-          ),
-          if (jobProvider.jobIdResponse != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Text(
-                'Job ID: ${jobProvider.jobIdResponse!.jobId}',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            )
-          else if (jobProvider.error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Text(
-                'Error: ${jobProvider.error}',
-                style: TextStyle(color: Colors.red),
-              ),
-            ),
+          const UploadContainer(),
+          // MyContainer(
+          //   width: 900,
+          //   child: Row(
+          //     mainAxisSize: MainAxisSize.min,
+          //     children: [
+          //       const Expanded(child: SizedBox()),
+          //       MyButton(
+          //         text: 'Upload',
+          //         onPressed:
+          //             jobProvider.isLoading
+          //                 ? null
+          //                 : () async {
+          //                   // Pick the file
+          //                   FilePickerResult? result = await FilePicker.platform
+          //                       .pickFiles(withData: true);
+          //                   if (result != null &&
+          //                       result.files.single.bytes != null) {
+          //                     final fileBytes = result.files.single.bytes!;
+          //                     final filename = result.files.single.name;
+          //                     await jobProvider.submitDockerfile(
+          //                       fileBytes,
+          //                       filename,
+          //                     );
+          //                   } else {
+          //                     // Optionally, you can set an error in the provider or show a message
+          //                     jobProvider.error = "No file selected.";
+          //                     jobProvider.notifyListeners();
+          //                   }
+          //                 },
+          //         isLoading: jobProvider.isLoading,
+          //         loadingText: 'Processing...',
+          //       ),
+          //     ],
+          //   ),
+          // ),
+          // if (jobProvider.jobIdResponse != null)
+          //   Padding(
+          //     padding: const EdgeInsets.only(top: 16),
+          //     child: Text(
+          //       'Job ID: ${jobProvider.jobIdResponse!.jobId}',
+          //       style: TextStyle(fontWeight: FontWeight.bold),
+          //     ),
+          //   )
+          // else if (jobProvider.error != null)
+          //   Padding(
+          //     padding: const EdgeInsets.only(top: 16),
+          //     child: Text(
+          //       'Error: ${jobProvider.error}',
+          //       style: TextStyle(color: Colors.red),
+          //     ),
+          //   ),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 500),
             switchInCurve: Curves.easeInOut,

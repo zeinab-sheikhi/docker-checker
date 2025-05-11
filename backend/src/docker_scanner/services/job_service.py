@@ -34,11 +34,16 @@ class JobService:
         """
         try:
             content = file.file.read().decode("utf-8", errors="ignore")
-            keywords = ["FROM", "RUN", "COPY"]
-            content_upper = content.upper()
-            if not any(keyword in content_upper for keyword in keywords):
+            # Check for at least one FROM instruction (not in a comment)
+            has_from = any(
+                line.strip().upper().startswith("FROM")
+                for line in content.splitlines()
+                if line.strip() and not line.strip().startswith("#")
+            )
+            if not has_from:
+                logging.error("Invalid Dockerfile: no FROM instruction found")
                 raise ValueError(
-                    "The uploaded file is not a valid Dockerfile. It must contain at least one of: FROM, RUN, COPY."
+                    "The uploaded file is not a valid Dockerfile. It must contain at least one FROM instruction."
                 )
             job_id = str(uuid.uuid4())
             self.redis_service.save_job_data(job_id, {"dockerfile": content})
