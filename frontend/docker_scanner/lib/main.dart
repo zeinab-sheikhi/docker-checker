@@ -10,8 +10,17 @@ import 'package:flutter/services.dart';
 import 'api/api_service.dart';
 import 'api/models.dart';
 import 'consts.dart';
+import 'package:provider/provider.dart';
+import 'providers/job_provider.dart';
 
-void main() => runApp(DockerScannerApp());
+void main() {
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => JobProvider(),
+      child: DockerScannerApp(),
+    ),
+  );
+}
 
 class DockerScannerApp extends StatelessWidget {
   @override
@@ -42,11 +51,11 @@ final dummyData = {'Critical': 40, 'High': 15, 'Medium': 15, 'Low': 30};
 
 class _UploadContainerState extends State<UploadContainer> {
   String? _fileContent;
-  bool _isProcessing = false;
   bool _showFile = false;
   bool _fileCopied = false;
   bool _scanCopied = false;
   bool _isLoading = false;
+  bool _isProcessing = false;
   JobResponse? _jobResponse;
 
   Map<String, int> _getSeverityCounts() {
@@ -59,6 +68,7 @@ class _UploadContainerState extends State<UploadContainer> {
   Future<void> _pickFile() async {
     setState(() {
       _fileContent = null;
+      _isProcessing = false;
       _showFile = false;
       _jobResponse = null;
     });
@@ -212,6 +222,12 @@ class _UploadContainerState extends State<UploadContainer> {
 
   @override
   Widget build(BuildContext context) {
+    final jobProvider = Provider.of<JobProvider>(context);
+
+    // Your file picking logic here
+    Uint8List? fileBytes;
+    String? filename;
+
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -224,13 +240,49 @@ class _UploadContainerState extends State<UploadContainer> {
                 const Expanded(child: SizedBox()),
                 MyButton(
                   text: 'Upload',
-                  onPressed: _pickFile,
-                  isProcessing: _isProcessing,
-                  processingText: 'Processing...',
+                  onPressed:
+                      jobProvider.isLoading
+                          ? null
+                          : () async {
+                            // Pick the file
+                            FilePickerResult? result = await FilePicker.platform
+                                .pickFiles(withData: true);
+                            if (result != null &&
+                                result.files.single.bytes != null) {
+                              final fileBytes = result.files.single.bytes!;
+                              final filename = result.files.single.name;
+                              await jobProvider.submitDockerfile(
+                                fileBytes,
+                                filename,
+                              );
+                            } else {
+                              // Optionally, you can set an error in the provider or show a message
+                              jobProvider.error = "No file selected.";
+                              jobProvider.notifyListeners();
+                            }
+                          },
+                  isLoading: jobProvider.isLoading,
+                  loadingText: 'Processing...',
                 ),
               ],
             ),
           ),
+          if (jobProvider.jobIdResponse != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Text(
+                'Job ID: ${jobProvider.jobIdResponse!.jobId}',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            )
+          else if (jobProvider.error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Text(
+                'Error: ${jobProvider.error}',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 500),
             switchInCurve: Curves.easeInOut,
@@ -258,14 +310,14 @@ class _UploadContainerState extends State<UploadContainer> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    _scanSummaryWidget(),
-                                    // _donutChartWidget(_getSeverityCounts()),
-                                  ],
-                                ),
+                                // Row(
+                                //   mainAxisAlignment:
+                                //       MainAxisAlignment.spaceBetween,
+                                //   children: [
+                                //     _scanSummaryWidget(),
+                                //     // _donutChartWidget(_getSeverityCounts()),
+                                //   ],
+                                // ),
                                 const SizedBox(height: 32),
                                 // --- File Content Section ---
                                 _fileContentWidget(),

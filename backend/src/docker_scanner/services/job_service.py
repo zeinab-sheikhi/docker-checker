@@ -10,6 +10,7 @@ from docker_scanner.schemas.job import (
 )
 from docker_scanner.schemas.trivy import format_vulnerabilities
 from docker_scanner.services.docker_service import DockerServiceInterface
+from docker_scanner.services.redis_service import RedisService
 
 logging.basicConfig(level=logging.INFO)
 
@@ -24,8 +25,28 @@ class JobService:
             docker_service: Service for Docker operations
         """
         self.docker_service = docker_service
+        self.redis_service = RedisService()
 
-    def process_dockerfile(self, file: UploadFile) -> JobResponse:
+    def check_dockerfile(self, file: UploadFile) -> str:
+        """
+        Validates the uploaded file as a Dockerfile and returns a job_id if valid.
+        Raises ValueError if the file is not a valid Dockerfile.
+        """
+        try:
+            content = file.file.read().decode("utf-8", errors="ignore")
+            keywords = ["FROM", "RUN", "COPY"]
+            content_upper = content.upper()
+            if not any(keyword in content_upper for keyword in keywords):
+                raise ValueError(
+                    "The uploaded file is not a valid Dockerfile. It must contain at least one of: FROM, RUN, COPY."
+                )
+            job_id = str(uuid.uuid4())
+            self.redis_service.save_job_data(job_id, {"dockerfile": content})
+            return job_id
+        finally:
+            file.file.close()
+
+    def scan_dockerfile(self, file: UploadFile) -> JobResponse:
         """
         Process uploaded Dockerfile:
         1. Build image from uploaded file
@@ -83,12 +104,3 @@ class JobService:
 
         finally:
             file.file.close()
-
-    async def get_job_status(self, job_id: str) -> JobResponse:
-        """
-        This method doesn't make sense without a database
-        We should either remove it or implement proper database storage
-        """
-        raise NotImplementedError(
-            "Job status tracking requires a database. This method should not be used until database support is added."
-        )

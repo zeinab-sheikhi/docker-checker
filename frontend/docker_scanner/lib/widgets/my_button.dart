@@ -4,8 +4,8 @@ import '../consts.dart';
 class MyButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
-  final bool isProcessing;
-  final String processingText;
+  final bool isLoading;
+  final String loadingText;
   final Widget? icon;
   final Color backgroundColor;
   final Color textColor;
@@ -21,8 +21,8 @@ class MyButton extends StatelessWidget {
     super.key,
     required this.text,
     required this.onPressed,
-    this.isProcessing = false,
-    this.processingText = 'Processing...',
+    this.isLoading = false,
+    this.loadingText = 'Processing...',
     this.icon,
     this.backgroundColor = kPrimary,
     this.textColor = kTextColor,
@@ -57,14 +57,14 @@ class MyButton extends StatelessWidget {
             ),
             padding: EdgeInsets.zero,
           ),
-          onPressed: isProcessing ? null : onPressed,
+          onPressed: isLoading ? null : onPressed,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             transitionBuilder:
                 (child, animation) =>
                     FadeTransition(opacity: animation, child: child),
             child:
-                isProcessing
+                isLoading
                     ? Row(
                       key: const ValueKey('processing'),
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -82,7 +82,7 @@ class MyButton extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          processingText,
+                          loadingText,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: textColor,

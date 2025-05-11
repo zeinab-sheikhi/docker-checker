@@ -51,3 +51,13 @@ class VulnerabilitySummary {
     );
   }
 }
+
+class JobIdResponse {
+  final String jobId;
+
+  JobIdResponse({required this.jobId});
+
+  factory JobIdResponse.fromJson(Map<String, dynamic> json) {
+    return JobIdResponse(jobId: json['job_id']);
+  }
+}

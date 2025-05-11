@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     server_workers: int = 1
     reload: bool = True  # Enable auto-reload in development
 
+    # redis settings
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_db: int = 0
+    redis_ttl: int = 3600  # 1 hour
     # Application settings
     app_config: AppConfig = AppConfig()
 
