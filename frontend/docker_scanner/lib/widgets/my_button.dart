@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../consts.dart';
 
 class MyButton extends StatelessWidget {
   final String text;
@@ -22,12 +23,12 @@ class MyButton extends StatelessWidget {
     this.isProcessing = false,
     this.processingText = 'Processing...',
     this.icon,
-    this.backgroundColor = const Color(0xFFFFC480),
-    this.textColor = Colors.black,
-    this.borderColor = Colors.black,
+    this.backgroundColor = kPrimary,
+    this.textColor = kTextColor,
+    this.borderColor = kButtonBorder,
     this.borderRadius = 8,
     this.borderWidth = 4,
-    this.loaderColor = const Color(0xFF444444),
+    this.loaderColor = kTextColor,
     this.width = 220,
     this.height = 60,
   });
@@ -57,43 +58,51 @@ class MyButton extends StatelessWidget {
           onPressed: isProcessing ? null : onPressed,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
-            transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
-            child: isProcessing
-                ? Row(
-                    key: const ValueKey('processing'),
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 3,
-                          valueColor: AlwaysStoppedAnimation<Color>(loaderColor),
-                          backgroundColor: Colors.transparent,
+            transitionBuilder:
+                (child, animation) =>
+                    FadeTransition(opacity: animation, child: child),
+            child:
+                isProcessing
+                    ? Row(
+                      key: const ValueKey('processing'),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              loaderColor,
+                            ),
+                            backgroundColor: Colors.transparent,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        processingText,
-                        style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
-                      ),
-                    ],
-                  )
-                : Row(
-                    key: const ValueKey('upload'),
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (icon != null) ...[
-                        icon!,
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 12),
+                        Text(
+                          processingText,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: textColor,
+                          ),
+                        ),
                       ],
-                      Text(
-                        text,
-                        style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
-                      ),
-                    ],
-                  ),
+                    )
+                    : Row(
+                      key: const ValueKey('upload'),
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (icon != null) ...[icon!, const SizedBox(width: 8)],
+                        Text(
+                          text,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: textColor,
+                          ),
+                        ),
+                      ],
+                    ),
           ),
         ),
       ),

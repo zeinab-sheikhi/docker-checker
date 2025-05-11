@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../consts.dart'; // Import the consts file
 
 class MyContainer extends StatelessWidget {
   final Widget child;
@@ -12,12 +13,12 @@ class MyContainer extends StatelessWidget {
   const MyContainer({
     super.key,
     required this.child,
-    this.backgroundColor = const Color(0xFFFFF4DA),
+    this.backgroundColor = kPrimaryLight, // Use kPrimaryLight
     this.width,
     this.height,
     this.padding = const EdgeInsets.all(40),
-    this.borderRadius = 15,
-    this.boxShadowOffset = const Offset(8, 8),
+    this.borderRadius = 11,
+    this.boxShadowOffset = const Offset(6, 6),
   });
   @override
   Widget build(BuildContext context) {
@@ -28,10 +29,10 @@ class MyContainer extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: Colors.black, width: 4),
+        border: Border.all(color: kButtonBorder, width: 4), // Use kButtonBorder
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF181C23), // Dark shadow
+            color: kTextColor, // Use kTextColor for dark shadow
             offset: boxShadowOffset,
             blurRadius: 0,
             spreadRadius: 0,

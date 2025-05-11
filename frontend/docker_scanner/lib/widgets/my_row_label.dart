@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
+import '../consts.dart';
 
 class MyRowLabel extends StatelessWidget {
   final String label;
   final Widget? rightChild;
 
-  const MyRowLabel({
-    super.key,
-    required this.label,
-    this.rightChild,
-  });
+  const MyRowLabel({super.key, required this.label, this.rightChild});
 
   @override
   Widget build(BuildContext context) {
@@ -17,10 +14,9 @@ class MyRowLabel extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            // fontFamily: 'JetBrainsMono',
             fontWeight: FontWeight.bold,
             fontSize: 18,
-            color: Color(0xFF181C23),
+            color: kTextColor,
           ),
         ),
         const Spacer(),
