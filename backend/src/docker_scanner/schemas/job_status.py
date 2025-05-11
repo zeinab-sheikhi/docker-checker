@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from docker_scanner.schemas.trivy import VulnerabilitySummary
 
@@ -36,8 +36,16 @@ class ScanImageResult(BaseModel):
 class JobStatusResponse(BaseModel):
     job_id: str
     status: JobStatus
-    # dockerfile: Optional[str] = None
+    dockerfile: str | None = None
     build_result: BuildImageResult | None = None
     scan_result: ScanImageResult | None = None
     run_result: RunContainerResult | None = None
     error: str | None = None
+
+
+class ErrorResponse(BaseModel):
+    """Error response."""
+
+    detail: str
+
+    model_config = ConfigDict(json_schema_extra={"example": {"detail": "Error message"}})

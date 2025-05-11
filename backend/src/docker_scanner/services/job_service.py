@@ -43,8 +43,39 @@ class JobService:
             if not lines:
                 raise ValueError("The uploaded file is empty or contains only comments.")
 
-            # Check if there's at least one FROM instruction
-            if not any(line.upper().startswith("FROM") for line in lines):
+            # List of common Dockerfile instructions
+            dockerfile_instructions = [
+                "FROM",
+                "RUN",
+                "CMD",
+                "LABEL",
+                "EXPOSE",
+                "ENV",
+                "ADD",
+                "COPY",
+                "ENTRYPOINT",
+                "VOLUME",
+                "USER",
+                "WORKDIR",
+                "ARG",
+                "ONBUILD",
+                "STOPSIGNAL",
+                "HEALTHCHECK",
+                "SHELL",
+            ]
+
+            # Check if any line starts with a valid Dockerfile instruction
+            valid_instructions = [
+                line.upper().split()[0]
+                for line in lines
+                if any(line.upper().startswith(instruction) for instruction in dockerfile_instructions)
+            ]
+
+            # Must have at least FROM and one other instruction
+            if not valid_instructions:
+                raise ValueError("The uploaded file is not a valid Dockerfile. No valid Dockerfile instructions found.")
+
+            if "FROM" not in list(valid_instructions):
                 raise ValueError("The uploaded file is not a valid Dockerfile. Missing FROM instruction.")
 
             job_id = str(uuid.uuid4())
@@ -230,6 +261,7 @@ class JobService:
             job_id=job_id,
             status=status,
             error=data.get("error"),
+            dockerfile=data.get("dockerfile"),
             build_result=BuildImageResult(**data["build_result"]) if "build_result" in data else None,
             scan_result=ScanImageResult(**data["scan_result"]) if "scan_result" in data else None,
             run_result=RunContainerResult(**data["run_result"]) if "run_result" in data else None,

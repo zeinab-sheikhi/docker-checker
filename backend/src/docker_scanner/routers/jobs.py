@@ -1,8 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, status
 from fastapi.responses import JSONResponse
 
-from docker_scanner.schemas.job import ErrorResponse
-from docker_scanner.schemas.job_status import JobStatusResponse
+from docker_scanner.schemas.job_status import ErrorResponse, JobStatusResponse
 from docker_scanner.services.docker_service import DockerService
 from docker_scanner.services.job_service import JobService
 

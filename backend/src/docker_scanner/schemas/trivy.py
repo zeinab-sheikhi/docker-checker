@@ -12,18 +12,18 @@ class CVSSModel(BaseModel):
 
 class VulnerabilityModel(BaseModel):
     VulnerabilityID: str
-    PkgID: str | None
+    PkgID: str | None = None
     PkgName: str
-    InstalledVersion: str | None
-    FixedVersion: str | None
-    Status: str | None
+    InstalledVersion: str | None = None
+    FixedVersion: str | None = None
+    Status: str | None = None
     Severity: str
-    Title: str | None
-    Description: str | None
-    PrimaryURL: str | None
-    References: list[str] | None
-    CweIDs: list[str] | None
-    CVSS: dict[str, CVSSModel] | None
+    Title: str | None = None
+    Description: str | None = None
+    PrimaryURL: str | None = None
+    References: list[str] | None = None
+    CweIDs: list[str] | None = None
+    CVSS: dict[str, CVSSModel] | None = None
 
 
 class ResultModel(BaseModel):
