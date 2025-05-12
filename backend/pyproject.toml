@@ -24,6 +24,7 @@ dependencies = [
     "python-multipart>=0.0.20",
     "types-requests",
     "redis>=6.0.0",
+    "dockerfile-parse>=2.0.1",
 ]
 
 [tool.uv]

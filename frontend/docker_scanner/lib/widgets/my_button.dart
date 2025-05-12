@@ -27,7 +27,7 @@ class MyButton extends StatelessWidget {
     this.backgroundColor = kPrimary,
     this.textColor = kTextColor,
     this.borderColor = kButtonBorder,
-    this.borderRadius = 8,
+    this.borderRadius = 6,
     this.borderWidth = 4,
     this.loaderColor = kTextColor,
     this.width = 220,

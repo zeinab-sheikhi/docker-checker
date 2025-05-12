@@ -16,7 +16,7 @@ class MyContainer extends StatelessWidget {
     this.backgroundColor = kPrimaryLight,
     this.width,
     this.height,
-    this.padding = const EdgeInsets.all(40),
+    this.padding = const EdgeInsets.all(10),
     this.borderRadius = 11,
     this.boxShadowOffset = const Offset(6, 6),
   });
