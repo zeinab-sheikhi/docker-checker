@@ -1,4 +1,4 @@
-# Docker Scanner Project
+# Docker Scanner
 
 This application provides a web interface and REST API for evaluating Dockerfiles by building, scanning, and running Docker images, then extracting a performance metric from the container output. The workflow is as follows:
 
