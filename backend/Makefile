@@ -4,11 +4,11 @@ UV_COMMAND := uv
 
 help:
 	@echo "Available commands:"
-	@echo "  make server  - Run the MCP server"
+	@echo "  make server  - Run server"
 	@echo "  make clean   - Clean up cache files"
 
 run-server:
-	mcp-alphafold
+	docker-scanner
 
 install-uv:
 	@which $(UV_COMMAND) >/dev/null 2>&1 || (echo "Could not find 'uv'! Installing..."; curl -LsSf https://astral.sh/uv/install.sh | sh)
@@ -17,13 +17,10 @@ install: install-uv
 	uv sync --all-extras
 
 build-docker:
-	docker build --no-cache -t mcp-alphafold .
+	docker build --no-cache -t docker-scanner .
 
 run-docker:
-	docker run -it mcp-alphafold
-
-run-docker-compose:
-	docker compose up --build
+	docker run -it -v /var/run/docker.sock:/var/run/docker.sock docker-scanner
 
 checks:
 	uv run pre-commit run --all-files
