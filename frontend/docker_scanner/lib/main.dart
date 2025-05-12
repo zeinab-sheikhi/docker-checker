@@ -48,14 +48,14 @@ class DockerScannerApp extends StatelessWidget {
             ],
           ),
           elevation: 0,
-          toolbarHeight: 100,
+          toolbarHeight: 75,
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(2.0),
             child: Container(color: black, height: 4.0),
           ),
         ),
         body: const Padding(
-          padding: EdgeInsets.symmetric(vertical: 48),
+          padding: EdgeInsets.symmetric(vertical: 50),
           child: Align(
             alignment: Alignment.topCenter,
             child: DockerScannerPage(),
@@ -77,6 +77,7 @@ class _DockerScannerPageState extends State<DockerScannerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: white,
       body: Center(
         child: SizedBox(
           width: 1000,

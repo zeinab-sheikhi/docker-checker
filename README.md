@@ -46,39 +46,7 @@ CMD echo '{"perf":0.99}' > /data/perf.json
 - Any files written by the container to `/data` (such as `perf.json`) are accessible to the backend after the container exits.
 - This approach ensures safe and isolated data exchange between the container and the backend service.
 
-## Architecture Overview
-
-This project consists of three main services, orchestrated using Docker Compose:
-
-### 1. Backend
-- **Location:** `./backend`
-- **Description:** The backend is a FastAPI (Python) service that provides the main API for the application. It communicates with Docker on the host (via a mounted Docker socket) and uses Redis for caching or task management.
-- **Exposed Port:** `8000`
-- **Depends on:** Redis
-
-### 2. Redis
-- **Location:** Docker official image
-- **Description:** Used as a cache.
-- **Exposed Port:** `6379`
-
-### 3. Frontend
-- **Location:** `./frontend`
-- **Description:** A Flutter web application served via Nginx. It communicates with the backend API.
-- **Exposed Port:** `58632`
-- **Depends on:** Backend
-
-All services are defined in `compose.yml` and can be built and run together.
-
-## Service Interaction
-- The **frontend** (Flutter web) makes HTTP requests to the **backend** (FastAPI).
-- The **backend** interacts with the host's Docker daemon (via `/var/run/docker.sock`) and uses **Redis** for caching.
-- All services are networked together by Docker Compose, allowing them to communicate via service names (e.g., `backend`, `redis`).
-
-## Service URLs
-After starting the services, you can access them at:
-
-- **Frontend:** [http://localhost:58632](http://localhost:58632)
-- **Backend API:** [http://localhost:8000](http://localhost:8000)
+<video src="/Users/zeinab/Desktop/demo.mov" controls width="500"></video>
 
 ## Running the Project
 
@@ -121,6 +89,41 @@ To stop all services:
 ```bash
 docker compose down
 ```
+
+## Architecture Overview
+
+This project consists of three main services, orchestrated using Docker Compose:
+
+### 1. Backend
+- **Location:** `./backend`
+- **Description:** The backend is a FastAPI (Python) service that provides the main API for the application. It communicates with Docker on the host (via a mounted Docker socket) and uses Redis for caching or task management.
+- **Exposed Port:** `8000`
+- **Depends on:** Redis
+
+### 2. Redis
+- **Location:** Docker official image
+- **Description:** Used as a cache.
+- **Exposed Port:** `6379`
+
+### 3. Frontend
+- **Location:** `./frontend`
+- **Description:** A Flutter web application served via Nginx. It communicates with the backend API.
+- **Exposed Port:** `58632`
+- **Depends on:** Backend
+
+All services are defined in `compose.yml` and can be built and run together.
+
+## Service Interaction
+- The **frontend** (Flutter web) makes HTTP requests to the **backend** (FastAPI).
+- The **backend** interacts with the host's Docker daemon (via `/var/run/docker.sock`) and uses **Redis** for caching.
+- All services are networked together by Docker Compose, allowing them to communicate via service names (e.g., `backend`, `redis`).
+
+## Service URLs
+After starting the services, you can access them at:
+
+- **Frontend:** [http://localhost:58632](http://localhost:58632)
+- **Backend API:** [http://localhost:8000](http://localhost:8000)
+
 
 ## Development Notes
 - The frontend disables CORS for local development. If deploying to production, review CORS settings.
