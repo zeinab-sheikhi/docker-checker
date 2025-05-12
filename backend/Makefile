@@ -39,7 +39,7 @@ test:
 	uv run pytest tests/
 
 test-coverage:
-	uv run pytest --cov=app --cov-report=term-missing
+	uv run pytest --cov=src --cov-report=term-missing tests/ -s -vv
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
