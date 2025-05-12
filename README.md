@@ -1,7 +1,5 @@
 # Docker Scanner Project
 
-## Application Overview & Workflow
-
 This application provides a web interface and REST API for evaluating Dockerfiles by building, scanning, and running Docker images, then extracting a performance metric from the container output. The workflow is as follows:
 
 ### 1. Uploading a Dockerfile
@@ -32,9 +30,6 @@ This application provides a web interface and REST API for evaluating Dockerfile
 - The user can query the status and result of their job using the job ID.
 - The backend returns the current status (pending, failed, success) and the performance value if available.
 
-### 6. Mock Vulnerability Scanner (for Testing)
-- For development and testing, a mock HTTP endpoint is provided to simulate the vulnerability scanning process. In production, Trivy is used.
-
 ## Example Dockerfile
 Here is an example Dockerfile that writes a performance value to `/data/perf.json`:
 
@@ -63,7 +58,7 @@ This project consists of three main services, orchestrated using Docker Compose:
 
 ### 2. Redis
 - **Location:** Docker official image
-- **Description:** Used as a cache for the backend service.
+- **Description:** Used as a cache.
 - **Exposed Port:** `6379`
 
 ### 3. Frontend
