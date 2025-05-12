@@ -46,7 +46,7 @@ CMD echo '{"perf":0.99}' > /data/perf.json
 - Any files written by the container to `/data` (such as `perf.json`) are accessible to the backend after the container exits.
 - This approach ensures safe and isolated data exchange between the container and the backend service.
 
-<video src="/Users/zeinab/Desktop/demo.mov" controls width="500"></video>
+<video src="demo.mp4" controls width="500"></video>
 
 ## Running the Project
 
