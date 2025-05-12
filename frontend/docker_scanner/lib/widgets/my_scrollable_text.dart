@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../consts.dart';
 
 class MyScrollableText extends StatelessWidget {
   final String text;

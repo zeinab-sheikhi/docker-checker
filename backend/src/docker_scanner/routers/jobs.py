@@ -1,17 +1,20 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
 from fastapi.responses import JSONResponse
 
 from docker_scanner.schemas.job_status import ErrorResponse, JobStatusResponse
-from docker_scanner.services.docker_service import DockerService
 from docker_scanner.services.job_service import JobService
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
-def get_job_service() -> JobService:
-    """Dependency injection for JobService"""
-    docker_service = DockerService()
-    return JobService(docker_service)
+# Dependency to get JobService from app state
+def get_job_service(request: Request) -> JobService:
+    """Get the app-level JobService instance"""
+    return request.app.state.job_service
+
+
+# Use the dependency
+job_service_dependency = Depends(get_job_service)
 
 
 job_service_dependency = Depends(get_job_service)
@@ -26,7 +29,6 @@ job_service_dependency = Depends(get_job_service)
     },
 )
 async def create_job(
-    background_tasks: BackgroundTasks,
     file: UploadFile,
     job_service: JobService = job_service_dependency,
 ):
@@ -36,7 +38,6 @@ async def create_job(
     """
     try:
         job_id = job_service.create_job(file)
-        background_tasks.add_task(job_service.process_job, job_id)
         return JSONResponse(status_code=200, content={"job_id": job_id})
     except ValueError as err:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err)) from err
@@ -47,7 +48,10 @@ async def create_job(
 @router.get(
     "/status/{job_id}",
     response_model=JobStatusResponse,
-    responses={404: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+    responses={
+        404: {"model": ErrorResponse, "description": "Job not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"},
+    },
 )
 async def check_job_status(
     job_id: str,

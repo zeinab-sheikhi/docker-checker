@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../consts.dart';
 
-class JobIdTextFormField extends StatelessWidget {
+class JobIdTextFormField extends StatefulWidget {
   final TextEditingController controller;
   final String? hintText;
   final void Function(String)? onChanged;
@@ -13,20 +13,15 @@ class JobIdTextFormField extends StatelessWidget {
     this.onChanged,
   });
 
+  @override
+  State<JobIdTextFormField> createState() => _JobIdTextFormFieldState();
+}
+
+class _JobIdTextFormFieldState extends State<JobIdTextFormField> {
   // UUID v4 regex
   static final _uuidRegExp = RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
   );
-
-  String? _uuidValidator(String? value) {
-    if (value == null || value.isEmpty) {
-      return null;
-    }
-    if (!_uuidRegExp.hasMatch(value.trim())) {
-      return 'Please enter a valid UUID (Job ID)';
-    }
-    return null;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,22 +30,18 @@ class JobIdTextFormField extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: kContainerBackground,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
           border: const Border(
             top: BorderSide(color: kButtonBorder, width: 3),
             left: BorderSide(color: kButtonBorder, width: 3),
-            right: BorderSide(color: kButtonBorder, width: 7), // Thicker right
-            bottom: BorderSide(
-              color: kButtonBorder,
-              width: 7,
-            ), // Thicker bottom
+            right: BorderSide(color: kButtonBorder, width: 7),
+            bottom: BorderSide(color: kButtonBorder, width: 7),
           ),
         ),
         child: TextFormField(
-          controller: controller,
+          controller: widget.controller,
           decoration: InputDecoration(
-            hintText: hintText,
-            errorText: null,
+            hintText: widget.hintText,
             hintStyle: TextStyle(
               color: kTextColor.withAlpha((255 * 0.6).round()),
               fontSize: 22,
@@ -67,9 +58,17 @@ class JobIdTextFormField extends StatelessWidget {
             fontSize: 22,
             fontWeight: FontWeight.w500,
           ),
-          validator: _uuidValidator,
-          onChanged: onChanged,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
+          onChanged: widget.onChanged,
+          // validator: (value) {
+          //   if (value == null || value.isEmpty) {
+          //     return null;
+          //   }
+          //   if (!_uuidRegExp.hasMatch(value.trim())) {
+          //     return 'Please enter a valid UUID (Job ID)';
+          //   }
+          //   return null;
+          // },
+          autovalidateMode: AutovalidateMode.disabled,
         ),
       ),
     );

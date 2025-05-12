@@ -7,7 +7,6 @@ import 'package:docker_scanner/providers/job_provider.dart';
 import 'package:docker_scanner/widgets/my_container.dart';
 import 'package:docker_scanner/widgets/my_button.dart';
 import 'package:docker_scanner/widgets/my_text_form_field.dart';
-import 'package:docker_scanner/widgets/my_error_box.dart';
 
 class UploadContainer extends StatefulWidget {
   const UploadContainer({super.key});
@@ -20,28 +19,16 @@ class _UploadContainerState extends State<UploadContainer> {
   @override
   Widget build(BuildContext context) {
     final jobProvider = Provider.of<JobProvider>(context);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 900,
-          child:
-              (jobProvider.error != null)
-                  ? ErrorMessageBox(message: jobProvider.error ?? '')
-                  : const SizedBox(),
-        ),
-        MyContainer(
-          width: 900,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Expanded(flex: 3, child: _jobIdTextFormField(jobProvider)),
-              const SizedBox(width: 32),
-              Expanded(flex: 1, child: _uploadButton(jobProvider)),
-            ],
-          ),
-        ),
-      ],
+    return MyContainer(
+      width: 1000,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Expanded(flex: 3, child: _jobIdTextFormField(jobProvider)),
+          const SizedBox(width: 32),
+          Expanded(flex: 1, child: _uploadButton(jobProvider)),
+        ],
+      ),
     );
   }
 }
@@ -59,7 +46,7 @@ Widget _uploadButton(JobProvider jobProvider) {
               // Pick the file
               final picked = await _pickFile();
               if (picked.fileBytes != null && picked.filename != null) {
-                await jobProvider.submitDockerfile(
+                await jobProvider.createJob(
                   picked.fileBytes!,
                   picked.filename!,
                 );

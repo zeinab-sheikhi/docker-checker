@@ -57,3 +57,10 @@ class RedisService:
         Delete all data for a job_id.
         """
         self.client.delete(job_id)
+
+    def close(self):
+        """
+        Close the Redis client connection.
+        """
+        if self.client:
+            self.client.close()

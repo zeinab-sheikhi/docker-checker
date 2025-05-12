@@ -1,13 +1,11 @@
-import io
 import json
-import logging
 import subprocess
-import tarfile
-from pathlib import Path
 from typing import BinaryIO, Protocol
 
 import docker
 from docker.models.containers import Container
+
+from docker_scanner.logger import get_logger
 from docker_scanner.schemas.docker import (
     DockerBuildImageResponse,
     DockerRunContainerResponse,
@@ -18,6 +16,8 @@ from docker_scanner.schemas.trivy import (
     VulnerabilitySummary,
 )
 from docker_scanner.settings import settings
+
+logger = get_logger()
 
 
 class DockerServiceInterface(Protocol):
@@ -50,7 +50,6 @@ class DockerService(DockerServiceInterface):
         """Initialize Docker client and setup workspace"""
         self.client = docker.from_env()
         self.timeout = settings.docker_timeout
-        self._setup_volume_directory()
 
     def build_image(self, dockerfile: BinaryIO, job_id: str) -> DockerBuildImageResponse:
         """
@@ -67,23 +66,23 @@ class DockerService(DockerServiceInterface):
             RuntimeError: If the Docker build fails for any reason.
         """
         try:
-            logging.info(f"Building image for job {job_id}")
+            logger.info(f"Building image for job {job_id}")
             image, _ = self.client.images.build(
                 fileobj=dockerfile,
                 tag=f"docker-check-{job_id}",
                 rm=True,
                 forcerm=True,
             )
-            logging.info(f"Successfully built image with ID: {image.id}\n")
+            logger.info(f"Successfully built image with ID: {image.id}\n")
             return DockerBuildImageResponse(image_id=image.id, tags=image.tags)
         except (docker.errors.BuildError, docker.errors.APIError) as e:
-            logging.error(f"Docker build failed: {str(e)}")
+            logger.error(f"Docker build failed: {str(e)}")
             raise ValueError(f"Docker build failed: {str(e)}") from e
         except TypeError as e:
-            logging.error(f"Docker File Type Error: {str(e)}")
+            logger.error(f"Docker File Type Error: {str(e)}")
             raise ValueError(f"Docker File Type Error: {str(e)}") from e
         except Exception as e:
-            logging.error(f"Docker build failed: {str(e)}")
+            logger.error(f"Docker build failed: {str(e)}")
             raise RuntimeError(str(e)) from e
 
     def scan_image(self, image_id: str) -> ScanResult:
@@ -117,18 +116,18 @@ class DockerService(DockerServiceInterface):
             return ScanResult(is_safe=is_safe, vulnerabilities=vulnerabilities)
 
         except FileNotFoundError as e:
-            logging.error("Trivy is not installed or not found in PATH.")
+            logger.error("Trivy is not installed or not found in PATH.")
             raise ValueError(
                 "Trivy is not installed or not found in PATH. Please install Trivy and ensure it is available in your system PATH."
             ) from e
         except subprocess.CalledProcessError as e:
-            logging.error(f"Trivy scan failed: {e.stderr}")
+            logger.error(f"Trivy scan failed: {e.stderr}")
             raise ValueError(f"Trivy scan failed: {e.stderr}") from e
         except json.JSONDecodeError as e:
-            logging.error("Failed to parse Trivy output as JSON.")
+            logger.error("Failed to parse Trivy output as JSON.")
             raise ValueError("Failed to parse Trivy output as JSON.") from e
         except Exception as e:
-            logging.error(f"Unexpected error during Trivy scan: {str(e)}")
+            logger.error(f"Unexpected error during Trivy scan: {str(e)}")
             raise RuntimeError(f"Unexpected error during Trivy scan: {str(e)}") from e
 
     def run_container(self, image_id: str, job_id: str) -> DockerRunContainerResponse:
@@ -144,17 +143,38 @@ class DockerService(DockerServiceInterface):
             RuntimeError: For unexpected server errors
         """
         container = None
+        volume_name = f"job-data-{job_id}"
         try:
-            job_data_dir, volume_config = self._prepare_volume_and_job_dir(job_id)
-            container = self.client.containers.run(image=image_id, detach=True, volumes=volume_config)
+            # Create a Docker volume for this job
+            logger.info(f"Creating volume {volume_name}")
+            self.client.volumes.create(name=volume_name)
+
+            # Configure volume for container
+            volume_config = {volume_name: {"bind": "/data", "mode": "rw"}}
+            # job_data_dir, volume_config = self._prepare_volume_and_job_dir(job_id)
+
+            logger.info(f"Running container with image {image_id} for job {job_id}")
+            logger.info(f"Volume config: {volume_config}")
+
+            container = self.client.containers.run(
+                image=image_id,
+                detach=True,
+                volumes=volume_config,  # Add this to ensure /data exists and is writable
+            )
+            # Wait for container to complete
             result = container.wait(timeout=self.timeout)
             exit_code = result.get("StatusCode")
             if exit_code != 0:
                 raise ValueError(f"Container exited with non-zero status {exit_code}.")
+
             container.reload()  # Ensure status is up-to-date
             status = container.status if hasattr(container, "status") else "unknown"
-            self._copy_data_from_container(container, job_data_dir)
-            performance = self._read_performance_metric(job_data_dir)
+            # self._copy_data_from_container(container, job_data_dir)
+            # performance = self._read_performance_metric(job_data_dir)
+
+            # Extract performance data from the volume
+            performance = self._extract_performance_from_volume(volume_name)
+
             return DockerRunContainerResponse(
                 image_id=image_id,
                 container_id=container.id,
@@ -163,86 +183,101 @@ class DockerService(DockerServiceInterface):
             )
 
         except docker.errors.ImageNotFound as e:
-            logging.error(f"Docker image not found: {image_id}")
+            logger.error(f"Docker image not found: {image_id}")
             raise ValueError(f"Docker image not found: {image_id}") from e
         except docker.errors.APIError as e:
-            logging.error(f"Docker API error: {str(e)}")
+            logger.error(f"Docker API error: {str(e)}")
             raise ValueError(f"Docker API error: {str(e)}") from e
         except docker.errors.ContainerError as e:
-            logging.error(f"Container error: {str(e)}")
+            logger.error(f"Container error: {str(e)}")
             raise RuntimeError(f"Docker container error: {str(e)}") from e
         except Exception as e:
-            logging.error(f"Unexpected error in run_container: {str(e)}")
+            logger.error(f"Unexpected error in run_container: {str(e)}")
             raise RuntimeError(f"Unexpected error in run_container: {str(e)}") from e
-        finally:
-            if container:
-                self.cleanup_container(container)
 
-    def _copy_data_from_container(
-        self, container: Container, host_data_dir: Path, container_data_path: str = "/data"
-    ) -> None:
+    def _extract_performance_from_volume(self, volume_name: str) -> float | None:
         """
-        Copy the contents of the container's /data directory to the host job data directory.
-        Args:
-            container: The Docker container object
-            host_data_dir: The Path object for the host's job data directory
-            container_data_path: The path inside the container to copy (default: /data)
-        """
-        try:
-            bits, stat = container.get_archive(container_data_path)
-            file_like = io.BytesIO(b"".join(bits))
-            with tarfile.open(fileobj=file_like) as tar:
-                tar.extractall(path=host_data_dir)
-            logging.info(f"Copied data from container {container.id} to {host_data_dir}")
-        except Exception as e:
-            logging.warning(f"Failed to copy data from container: {e}")
+        Extract performance data from a Docker volume using a temporary container
 
-    def _read_performance_metric(self, job_data_dir: Path) -> float | None:
-        """
-        Read the performance metric from perf.json in the job data directory.
         Args:
-            job_data_dir: The Path object for the host's job data directory
+            volume_name: The name of the Docker volume containing the performance data
+
         Returns:
-            The performance metric as a float if available, otherwise None.
+            The performance metric as a float if available, otherwise None
         """
-        perf_file = job_data_dir / "perf.json"
-        if perf_file.exists():
+        temp_container = None
+        try:
+            # Create a temporary container to access the volume
+            temp_container = self.client.containers.create(
+                "alpine:latest",
+                command="cat /data/perf.json",
+                volumes={
+                    volume_name: {
+                        "bind": "/data",
+                        "mode": "ro",  # Read-only access
+                    }
+                },
+            )
+
+            # Start and wait for the container
+            temp_container.start()
+            exit_code = temp_container.wait()["StatusCode"]
+
+            if exit_code != 0:
+                logger.warning(f"Failed to read performance data, exit code: {exit_code}")
+                return None
+
+            # Get the logs (which will contain the file contents)
+            logs = temp_container.logs().decode("utf-8").strip()
+
+            if not logs:
+                logger.warning("No performance data found")
+                return None
+
+            # Parse the JSON
             try:
-                with open(perf_file) as f:
-                    perf_data = json.load(f)
-                    return perf_data.get("perf")
-            except Exception as e:
-                logging.warning(f"Failed to read performance metric: {e}")
-        return None
+                data = json.loads(logs)
+                return data.get("perf")
+            except json.JSONDecodeError:
+                logger.warning(f"Invalid JSON in performance data: {logs}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Error extracting performance data: {str(e)}")
+            return None
+        finally:
+            self.cleanup_container(temp_container)
 
     def cleanup_container(self, container: Container | None) -> None:
         """Clean up container resources"""
         if container:
             try:
                 container.remove(force=True)
-                logging.info("Container removed successfully")
+                logger.info(f"Container {container.id} removed successfully")
             except docker.errors.APIError as e:
                 raise ValueError(f"Error removing container: {str(e)}") from e
 
-    def _setup_volume_directory(self) -> None:
-        """Setup volume directory"""
-        settings.volume_base_path.mkdir(parents=True, exist_ok=True)
-        logging.info(f"Initialized volume base path: {settings.volume_base_path}")
+    def cleanup_all_resources(self) -> None:
+        """Clean up all Docker resources created by this service"""
+        try:
+            # Clean up all containers with our prefix
+            containers = self.client.containers.list(all=True, filters={"name": "docker-check-"})
+            for container in containers:
+                try:
+                    container.remove(force=True)
+                    logger.info(f"Removed container: {container.id}")
+                except Exception as e:
+                    logger.error(f"Error removing container {container.id}: {e}")
 
-    def _prepare_volume_and_job_dir(self, job_id: str) -> tuple[Path, dict]:
-        """
-        Prepare the job-specific directory and return the volume config for Docker.
-        Returns:
-            (job_data_dir, volume_config)
-        """
-        job_data_dir = settings.get_job_volume_path(job_id)
-        job_data_dir.mkdir(parents=True, exist_ok=True)
-        logging.info(f"Created job directory: {job_data_dir}")
+            # Clean up all volumes with our prefix
+            volumes = self.client.volumes.list(filters={"name": "job-data-"})
+            for volume in volumes:
+                try:
+                    volume.remove(force=True)
+                    logger.info(f"Removed volume: {volume.name}")
+                except Exception as e:
+                    logger.error(f"Error removing volume {volume.name}: {e}")
 
-        volume_config = {
-            str(job_data_dir.absolute()): {
-                "bind": settings.volume_container_path,
-                "mode": settings.volume_mode,
-            }
-        }
-        return job_data_dir, volume_config
+            logger.info("All Docker resources cleaned up")
+        except Exception as e:
+            logger.error(f"Error during Docker cleanup: {e}")

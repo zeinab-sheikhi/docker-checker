@@ -2,21 +2,20 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../consts.dart';
 
-class MyDonutChart extends StatefulWidget {
+class MyDonutChart extends StatelessWidget {
   final Map<String, int> severityCounts;
+  final double width;
+  final double height;
 
-  const MyDonutChart({super.key, required this.severityCounts});
-
-  @override
-  State<MyDonutChart> createState() => _MyDonutChartState();
-}
-
-class _MyDonutChartState extends State<MyDonutChart> {
-  int? touchedIndex;
+  const MyDonutChart({
+    super.key,
+    required this.severityCounts,
+    this.width = 240,
+    this.height = 240,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final total = widget.severityCounts.values.fold<int>(0, (a, b) => a + b);
     final colors = {
       'critical': kCriticalSeverity,
       'high': kHighSeverity,
@@ -24,88 +23,84 @@ class _MyDonutChartState extends State<MyDonutChart> {
       'low': kLowSeverity,
     };
 
-    final keys = widget.severityCounts.keys.toList();
+    final keys = severityCounts.keys.toList();
 
-    List<PieChartSectionData> sections = [];
-    for (int i = 0; i < keys.length; i++) {
-      final key = keys[i];
-      final value = widget.severityCounts[key]!;
-      final isTouched = i == touchedIndex;
-      sections.add(
-        PieChartSectionData(
-          color: colors[key.toLowerCase()] ?? grey,
-          value: value.toDouble(),
-          title: '$value',
-          radius: isTouched ? 60 : 50,
-          titleStyle: const TextStyle(
-            color: white,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-      );
-    }
+    List<PieChartSectionData> sections =
+        keys.map((key) {
+          final value = severityCounts[key]!;
+          return PieChartSectionData(
+            color: colors[key.toLowerCase()] ?? grey,
+            value: value.toDouble(),
+            title: '$value',
+            radius: 40,
+            showTitle: true,
+            titleStyle: const TextStyle(
+              color: white,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          );
+        }).toList();
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(
-          height: 240,
-          width: 240,
-          child: PieChart(
-            PieChartData(
-              sections: sections,
-              centerSpaceRadius: 70,
-              sectionsSpace: 2,
-              startDegreeOffset: -90,
-              borderData: FlBorderData(show: false),
-              pieTouchData: PieTouchData(
-                enabled: true,
-                touchCallback: (event, response) {
-                  setState(() {
-                    if (!event.isInterestedForInteractions ||
-                        response == null ||
-                        response.touchedSection == null) {
-                      touchedIndex = null;
-                      return;
-                    }
-                    touchedIndex = response.touchedSection!.touchedSectionIndex;
-                  });
-                },
+    return Container(
+      // color: Colors.grey,
+      height: height,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            flex: 7,
+            child: PieChart(
+              PieChartData(
+                sections: sections,
+                centerSpaceRadius: 70,
+                sectionsSpace: 2,
+                startDegreeOffset: -90,
+                borderData: FlBorderData(show: false),
+                pieTouchData: PieTouchData(enabled: false),
               ),
             ),
-            duration: const Duration(milliseconds: 350),
-            curve: Curves.easeOut,
           ),
-        ),
-        const SizedBox(width: 32),
-        // Legend
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children:
-              keys.map((key) {
-                final color = colors[key.toLowerCase()] ?? grey;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(width: 18, height: 18, color: color),
-                      const SizedBox(width: 8),
-                      Text(
-                        key,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+          Expanded(
+            flex: 2,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children:
+                  keys.map((key) {
+                    final color = colors[key.toLowerCase()] ?? grey;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 0,
                       ),
-                    ],
-                  ),
-                );
-              }).toList(),
-        ),
-      ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            key,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
