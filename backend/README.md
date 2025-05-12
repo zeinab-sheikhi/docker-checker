@@ -144,15 +144,3 @@ curl -F "file=@Dockerfile" http://localhost:8000/api/v1/jobs/
 ```bash
 curl http://localhost:8000/api/v1/jobs/status/<job_id>
 ```
-
----
-
-## 🧹 Cleaning Up
-
-To remove caches and environment files:
-
-```bash
-make clean
-```
-
----
