@@ -80,8 +80,14 @@ class JobService:
         """
         # Get data from Redis
         data = self.redis_service.get_job_data(job_id)
+
+        # If job exists in Redis, return its current status
+        if data is not None and "dockerfile" in data:
+            return JobStatusResponse(**data)
+        
         if data is None or "dockerfile" not in data:
             raise ValueError(f"Job ID {job_id} not found")
+        
 
         dockerfile = data["dockerfile"]
         response = JobStatusResponse(
